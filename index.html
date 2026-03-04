@@ -1,0 +1,2047 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase iOS — Guide Complet</title>
+<meta name="description" content="Guide complet en français pour intégrer Firebase sur iOS (Swift 5.9+, SwiftUI, Clean Architecture) : Auth Apple, Firestore, Analytics, Crashlytics, règles de sécurité, offline et émulateurs.">
+<meta name="robots" content="index,follow">
+<meta name="language" content="fr">
+<meta name="author" content="Olivier (codewitholivier)">
+
+<!-- Open Graph / Facebook -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="Firebase iOS — Guide Complet">
+<meta property="og:description" content="Intégration Firebase iOS étape par étape : Auth Apple, Firestore, Analytics, Crashlytics, règles de sécurité, offline, émulateurs et architecture propre pour Swift 5.9+ et iOS 17+.">
+<meta property="og:locale" content="fr_FR">
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Firebase iOS — Guide Complet">
+<meta name="twitter:description" content="Tutoriel Firebase iOS avancé : configuration, Auth, Firestore, Analytics, Crashlytics, sécurité et offline pour une app Swift/SwiftUI propre.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300;1,9..144,700&family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #080808;
+  --bg2:      #0c0c0c;
+  --surface:  #111111;
+  --card:     #151515;
+  --card2:    #1a1a1a;
+  --border:   #1e1e1e;
+  --border2:  #2a2a2a;
+
+  --fire:     #ff5500;
+  --fire2:    #ff8800;
+  --fire3:    #ffcc00;
+  --ember:    #cc3300;
+  --fire-bg:  rgba(255,85,0,0.06);
+  --fire-dim: rgba(255,85,0,0.3);
+
+  --green:    #34d399;
+  --blue:     #60a5fa;
+  --purple:   #c084fc;
+  --red:      #f87171;
+
+  --text:     #d4c5a9;
+  --muted:    #4a4a4a;
+  --muted2:   #333;
+  --code-bg:  #060606;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.9;
+  overflow-x: hidden;
+}
+
+/* Grain texture */
+body::before {
+  content:'';
+  position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  background-size: 200px;
+  opacity: 0.4;
+}
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Fire glow background */
+.hero-glow {
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 70%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(255,85,0,0.15) 0%, rgba(255,136,0,0.06) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-glow2 {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background:
+    radial-gradient(ellipse 30% 25% at 20% 20%, rgba(255,204,0,0.04) 0%, transparent 100%),
+    radial-gradient(ellipse 25% 20% at 80% 15%, rgba(255,85,0,0.05) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Firebase flame SVG */
+.hero-flame {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 48px;
+}
+.flame-svg { 
+  width: 64px; height: 64px;
+  filter: drop-shadow(0 0 20px rgba(255,85,0,0.5)) drop-shadow(0 0 40px rgba(255,136,0,0.3));
+  animation: flicker 3s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,100%  { transform: scale(1)   rotate(0deg);   }
+  25%      { transform: scale(1.02) rotate(0.5deg); }
+  50%      { transform: scale(0.98) rotate(-0.5deg);}
+  75%      { transform: scale(1.01) rotate(0.3deg); }
+}
+
+.hero-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 64px 72px;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.hero-label {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fire2);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-label::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--fire2);
+}
+
+.hero h1 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(3.5rem, 9vw, 9rem);
+  font-weight: 700;
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: #fff;
+}
+.hero h1 .fire-word {
+  font-style: italic;
+  font-weight: 300;
+  background: linear-gradient(135deg, var(--fire3) 0%, var(--fire2) 40%, var(--fire) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero h1 .dim { color: var(--muted); -webkit-text-fill-color: var(--muted); }
+
+.hero-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  max-width: 480px;
+  margin-top: 24px;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+}
+
+.hero-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 32px;
+}
+.hbadge {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border: 1px solid;
+}
+.hbadge.fire   { border-color: var(--fire-dim); color: var(--fire2); background: var(--fire-bg); }
+.hbadge.ghost  { border-color: var(--border2);  color: var(--muted); }
+
+.hero-stats {
+  display: flex;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  margin-top: 40px;
+  padding-top: 28px;
+  flex-wrap: wrap;
+}
+.hstat {
+  padding-right: 36px;
+  margin-right: 36px;
+  border-right: 1px solid var(--border);
+}
+.hstat:last-child { border-right: none; }
+.hstat strong {
+  display: block;
+  font-family: 'Fraunces', serif;
+  font-size: 2.4rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--fire2);
+}
+.hstat span {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+/* ── NAV ── */
+nav {
+  position: sticky;
+  top: 0; z-index: 100;
+  background: rgba(8,8,8,0.97);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  padding: 0 64px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 0;
+}
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-inner a {
+  white-space: nowrap;
+  font-size: 9.5px;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 4px 14px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-right: 1px solid var(--border);
+  transition: all 0.15s;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+.nav-inner a:first-child { border-left: 1px solid var(--border); }
+.nav-inner a:hover { color: var(--fire2); background: var(--fire-bg); }
+
+/* ── MAIN ── */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 80px 64px 140px;
+  position: relative;
+  z-index: 1;
+}
+
+section { margin-bottom: 96px; }
+
+/* ── SECTION HEADER ── */
+.sec-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 40px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.sec-head::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 0;
+  width: 80px; height: 1px;
+  background: linear-gradient(90deg, var(--fire), transparent);
+}
+
+.sec-num {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-weight: 300;
+  font-size: 4.5rem;
+  line-height: 1;
+  color: var(--border2);
+  letter-spacing: -0.04em;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.sec-info {}
+
+h2 {
+  font-family: 'Fraunces', serif;
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 4px;
+}
+h2 em { font-style: italic; font-weight: 300; color: var(--fire2); }
+h2 .g { color: var(--green); }
+h2 .b { color: var(--blue); }
+h2 .p { color: var(--purple); }
+h2 .r { color: var(--red); }
+
+.sec-sub {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+h3 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--fire2);
+  margin: 40px 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+h3::before { content: '◆'; font-size: 7px; color: var(--fire); }
+h3::after  { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); max-width: 240px; }
+
+p { color: var(--text); margin-bottom: 14px; line-height: 1.85; }
+strong { color: #e8e0d0; font-weight: 500; }
+
+/* ── CODE ── */
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 22px 0;
+  position: relative;
+}
+.code-block::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--fire), var(--fire2), transparent);
+}
+.code-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 18px;
+  background: rgba(255,85,0,0.03);
+  border-bottom: 1px solid var(--border);
+}
+.code-dots { display: flex; gap: 6px; }
+.code-dots span { width: 9px; height: 9px; border-radius: 50%; }
+.code-dots span:nth-child(1) { background: #ff5f57; }
+.code-dots span:nth-child(2) { background: #ffbd2e; }
+.code-dots span:nth-child(3) { background: #28ca41; }
+.code-fname { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; }
+.code-body {
+  padding: 20px 22px;
+  overflow-x: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  line-height: 2;
+  color: #6a5a40;
+}
+.code-body pre { margin: 0; white-space: pre; }
+
+/* Syntax */
+.kw  { color: #ff7733; }
+.tp  { color: #ffaa44; }
+.str { color: #88bb66; }
+.num { color: #ee7777; }
+.cmt { color: #2a2a2a; font-style: italic; }
+.fn  { color: #bbcc55; }
+.var { color: #c8b888; }
+.mac { color: #ffaa44; font-weight: 500; }
+.op  { color: #886644; }
+.grn { color: #34d399; }
+.bl  { color: #60a5fa; }
+.pur { color: #c084fc; }
+.cy  { color: #22d3ee; }
+.red { color: #f87171; }
+
+/* ── CALLOUT ── */
+.callout {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 0 12px;
+  padding: 14px 18px;
+  margin: 18px 0;
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+.c-fire   { background: rgba(255,85,0,0.05);  border: 1px solid rgba(255,85,0,0.18);  border-left: 2px solid var(--fire); }
+.c-green  { background: rgba(52,211,153,0.05); border: 1px solid rgba(52,211,153,0.15); border-left: 2px solid var(--green); }
+.c-blue   { background: rgba(96,165,250,0.05); border: 1px solid rgba(96,165,250,0.15); border-left: 2px solid var(--blue); }
+.c-warn   { background: rgba(255,204,0,0.05);  border: 1px solid rgba(255,204,0,0.15);  border-left: 2px solid var(--fire3); }
+.c-red    { background: rgba(248,113,113,0.05);border: 1px solid rgba(248,113,113,0.15);border-left: 2px solid var(--red); }
+.c-purple { background: rgba(192,132,252,0.05);border: 1px solid rgba(192,132,252,0.15);border-left: 2px solid var(--purple); }
+.callout p { margin: 0; color: var(--text); font-size: 12.5px; }
+.callout strong { color: #e8e0d0; }
+
+/* ── CARDS ── */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(210px,1fr)); gap: 1px; margin: 22px 0; background: var(--border); }
+.card {
+  background: var(--card);
+  padding: 22px;
+  transition: background 0.2s;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--fire), transparent);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.3s;
+}
+.card:hover { background: var(--card2); }
+.card:hover::after { transform: scaleX(1); }
+.card-icon { font-size: 22px; margin-bottom: 12px; display: block; }
+.card h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #fff; margin-bottom: 7px; }
+.card p { font-size: 11.5px; color: var(--muted); margin: 0; line-height: 1.6; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; margin: 20px 0; border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th {
+  background: var(--surface);
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--fire);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+  color: var(--text);
+  vertical-align: top;
+  font-size: 12.5px;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(255,85,0,0.025); }
+code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 7px;
+  color: var(--fire2);
+}
+
+/* ── BADGE ── */
+.badge { font-size: 9.5px; padding: 2px 9px; border: 1px solid; letter-spacing: 0.06em; white-space: nowrap; }
+.b-fire   { background: rgba(255,85,0,.08);   color: var(--fire2);  border-color: rgba(255,85,0,.25); }
+.b-green  { background: rgba(52,211,153,.08); color: var(--green);  border-color: rgba(52,211,153,.25); }
+.b-blue   { background: rgba(96,165,250,.08); color: var(--blue);   border-color: rgba(96,165,250,.25); }
+.b-warn   { background: rgba(255,204,0,.08);  color: var(--fire3);  border-color: rgba(255,204,0,.25); }
+.b-red    { background: rgba(248,113,113,.08);color: var(--red);    border-color: rgba(248,113,113,.25); }
+.b-purple { background: rgba(192,132,252,.08);color: var(--purple); border-color: rgba(192,132,252,.25); }
+.b-grey   { background: rgba(255,255,255,.04);color: var(--muted);  border-color: var(--border2); }
+
+/* ── STEPS ── */
+.steps { margin: 20px 0; }
+.step { display: grid; grid-template-columns: 38px 1fr; gap: 0 18px; }
+.step-col { display: flex; flex-direction: column; align-items: center; }
+.step-num {
+  width: 32px; height: 32px;
+  border: 1px solid var(--border2);
+  color: var(--fire2);
+  font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-vline { width: 1px; flex: 1; background: var(--border); margin: 5px 0; }
+.step:last-child .step-vline { display: none; }
+.step-body { padding-bottom: 26px; padding-top: 4px; }
+.step-body h4 { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.1em; color: #e8e0d0; margin-bottom: 6px; }
+.step-body p  { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.7; }
+.step-note {
+  font-size: 10.5px; color: var(--fire2); margin-top: 6px;
+  background: var(--fire-bg); padding: 5px 10px; display: inline-block;
+  border-left: 2px solid var(--fire);
+}
+
+/* ── TREE ── */
+.tree {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  padding: 20px 24px; margin: 20px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; line-height: 1.9;
+  overflow-x: auto; position: relative;
+}
+.tree::before { content:''; position:absolute; top:0; left:0; right:0; height:1px; background:linear-gradient(90deg,var(--fire),transparent); }
+.td { color: var(--fire2); }
+.tf { color: #6a5a40; }
+.tc { color: var(--muted2); font-style: italic; }
+
+/* ── FIELD TABLE ── */
+.field-table { margin: 16px 0; border: 1px solid var(--border); }
+.field-row {
+  display: grid;
+  grid-template-columns: 200px 1fr auto;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+.field-row:last-child { border-bottom: none; }
+.field-row:hover { background: rgba(255,85,0,0.025); }
+.field-name {
+  padding: 11px 16px;
+  font-size: 11.5px; color: var(--fire2);
+  border-right: 1px solid var(--border);
+  background: rgba(255,85,0,0.02);
+  display: flex; align-items: center;
+}
+.field-desc { padding: 11px 16px; font-size: 12px; color: var(--text); display: flex; align-items: center; }
+.field-req { padding: 11px 16px; display: flex; align-items: center; justify-content: center; border-left: 1px solid var(--border); min-width: 80px; }
+
+/* ── HIGHLIGHT ── */
+.hl {
+  background: linear-gradient(135deg, rgba(255,85,0,0.07), rgba(255,136,0,0.03));
+  border: 1px solid rgba(255,85,0,0.2);
+  padding: 22px 26px; margin: 22px 0;
+}
+.hl h4 { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--fire); margin-bottom: 10px; }
+.hl p  { color: rgba(255,255,255,0.55); font-size: 12.5px; margin: 0; line-height: 1.8; }
+.hl strong { color: #fff; }
+
+/* ── FLOW ── */
+.flow { display: flex; align-items: center; overflow-x: auto; padding: 20px 0; gap: 0; }
+.flow-node { flex-shrink: 0; text-align: center; }
+.flow-box { background: var(--card); border: 1px solid var(--border); padding: 14px 16px; min-width: 105px; transition: border-color 0.2s; cursor: default; }
+.flow-box:hover { border-color: var(--border2); }
+.flow-box.f { border-top: 2px solid var(--fire); }
+.flow-box.g { border-top: 2px solid var(--green); }
+.flow-box.b { border-top: 2px solid var(--blue); }
+.flow-box.p { border-top: 2px solid var(--purple); }
+.flow-box.w { border-top: 2px solid var(--fire3); }
+.flow-icon { font-size: 18px; margin-bottom: 5px; }
+.flow-lbl  { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #e8e0d0; }
+.flow-sub  { font-size: 9px; color: var(--muted); margin-top: 3px; }
+.flow-arr  { flex-shrink: 0; padding: 0 8px; color: var(--border2); font-size: 12px; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── FOOTER ── */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  padding: 48px 24px;
+  font-size: 10px;
+  color: var(--muted);
+  line-height: 2.2;
+  letter-spacing: 0.06em;
+  position: relative;
+  z-index: 1;
+}
+footer strong { color: var(--fire2); }
+
+@media(max-width:768px) {
+  .hero-content { padding: 0 24px 60px; }
+  .nav-inner, main { padding-left: 24px; padding-right: 24px; }
+  .field-row { grid-template-columns: 1fr; }
+  .field-name { border-right: none; border-bottom: 1px solid var(--border); }
+  .field-req { border-left: none; border-top: 1px solid var(--border); justify-content: flex-start; }
+  .sec-num { font-size: 3rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ HERO ══ -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-glow2"></div>
+
+  <!-- Firebase flame -->
+  <div class="hero-flame">
+    <svg class="flame-svg" viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 68 L20 20 L32 38 L44 8 L52 68 L32 56 Z" fill="url(#fg1)"/>
+      <path d="M12 68 L32 56 L52 68 L32 44 Z" fill="url(#fg2)" opacity="0.7"/>
+      <defs>
+        <linearGradient id="fg1" x1="32" y1="8" x2="32" y2="68" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#ffcc00"/>
+          <stop offset="50%" stop-color="#ff8800"/>
+          <stop offset="100%" stop-color="#ff4400"/>
+        </linearGradient>
+        <linearGradient id="fg2" x1="12" y1="56" x2="52" y2="68" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#cc2200"/>
+          <stop offset="100%" stop-color="#ff5500"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
+
+  <div class="hero-content" style="padding-top:160px;">
+    <div class="hero-label">Guide complet · iOS · Swift 5.9+ · 2024–2025</div>
+    <h1>
+      <span class="fire-word">Firebase</span><br>
+      <span class="dim">iOS</span>
+    </h1>
+    <p class="hero-sub">Auth Apple Sign In · Firestore · Analytics · Crashlytics — de la console Firebase jusqu'au code Swift, intégré proprement dans une Clean Architecture.</p>
+    <div class="hero-badges">
+      <span class="hbadge fire">🔑 Sign in with Apple</span>
+      <span class="hbadge fire">🔥 Firestore</span>
+      <span class="hbadge fire">📊 Analytics</span>
+      <span class="hbadge fire">💥 Crashlytics</span>
+      <span class="hbadge ghost">Clean Architecture</span>
+      <span class="hbadge ghost">SPM</span>
+      <span class="hbadge ghost">iOS 17+</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><strong>12</strong><span>Sections</span></div>
+      <div class="hstat"><strong>4</strong><span>Services Firebase</span></div>
+      <div class="hstat"><strong>~70</strong><span>Min lecture</span></div>
+      <div class="hstat"><strong>iOS 17+</strong><span>Target</span></div>
+    </div>
+  </div>
+</header>
+
+<!-- ══ NAV ══ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#setup">01·Console</a>
+    <a href="#spm">02·SPM</a>
+    <a href="#init">03·Init</a>
+    <a href="#apple">04·Apple Auth</a>
+    <a href="#authlayer">05·Auth Layer</a>
+    <a href="#firestore">06·Firestore</a>
+    <a href="#rules">07·Rules</a>
+    <a href="#analytics">08·Analytics</a>
+    <a href="#crashlytics">09·Crashlytics</a>
+    <a href="#architecture">10·Architecture</a>
+    <a href="#offline">11·Offline</a>
+    <a href="#tests">12·Tests</a>
+  </div>
+</nav>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+  <!-- ── 01 CONSOLE ── -->
+  <section id="setup">
+    <div class="sec-head">
+      <div class="sec-num">01</div>
+      <div class="sec-info">
+        <h2>Console <em>Firebase</em></h2>
+        <div class="sec-sub">Création projet · iOS App · GoogleService-Info.plist</div>
+      </div>
+    </div>
+
+    <p>Tout commence sur <strong>console.firebase.google.com</strong>. Créez le projet Firebase avant de toucher à Xcode — c'est le projet Firebase qui génère le fichier de configuration dont votre app a besoin.</p>
+
+    <h3>Créer le projet Firebase</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-col"><div class="step-num">1</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Nouveau projet</h4>
+          <p>console.firebase.google.com → Créer un projet. Donnez un nom clair (<code>MonApp-Production</code>). Créez également un projet séparé pour le staging : <code>MonApp-Staging</code>. Un projet Firebase par environnement.</p>
+          <div class="step-note">⚠ Choisissez le bon emplacement des données (europe-west1 pour RGPD)</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">2</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Ajouter une app iOS</h4>
+          <p>Vue d'ensemble du projet → Ajouter une app → iOS. Renseignez l'<strong>identifiant d'app</strong> (Bundle ID) exactement comme dans Xcode : <code>com.votresociete.monapp</code>. Facultatif : surnom, App Store ID.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">3</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Télécharger GoogleService-Info.plist</h4>
+          <p>Firebase génère un fichier <code>GoogleService-Info.plist</code> unique par app iOS. Téléchargez-le et ajoutez-le dans Xcode en le glissant <strong>directement sur le target</strong> (pas dans un groupe). Cochez "Copy items if needed" et sélectionnez le bon target.</p>
+          <div class="step-note">✅ Ce fichier contient l'API_KEY, PROJECT_ID, BUNDLE_ID, APP_ID Firebase</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">4</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Ne jamais commiter GoogleService-Info.plist</h4>
+          <p>Ajoutez <code>GoogleService-Info.plist</code> à votre <code>.gitignore</code>. Distribuez-le via votre CI/CD (GitHub Secrets, Fastlane Match) ou les variables d'environnement. Le fichier contient des clés sensibles lisibles par n'importe qui ayant accès au repo.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout c-warn">
+      <span>⚠️</span>
+      <p><strong>Plusieurs environments :</strong> si vous avez Debug/Staging/Release, vous aurez plusieurs <code>GoogleService-Info.plist</code>. Stockez-les dans des dossiers séparés (<code>Firebase/Debug/</code>, <code>Firebase/Release/</code>) et utilisez un script de build Xcode pour copier le bon fichier selon la configuration active.</p>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Script de build Xcode — copier le bon GoogleService-Info.plist</span></div>
+      <div class="code-body"><pre><span class="cmt">#!/bin/bash
+# Build Phase → Run Script → AVANT "Copy Bundle Resources"</span>
+
+<span class="kw">case</span> <span class="str">"${CONFIGURATION}"</span> <span class="kw">in</span>
+  <span class="str">"Debug"</span>)
+    <span class="fn">cp</span> <span class="str">"${PROJECT_DIR}/Firebase/Debug/GoogleService-Info.plist"</span> \
+       <span class="str">"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"</span>
+    ;;
+  <span class="str">"Release"</span>)
+    <span class="fn">cp</span> <span class="str">"${PROJECT_DIR}/Firebase/Release/GoogleService-Info.plist"</span> \
+       <span class="str">"${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app/GoogleService-Info.plist"</span>
+    ;;
+  *)
+    <span class="fn">echo</span> <span class="str">"Unknown configuration: ${CONFIGURATION}"</span>
+    <span class="fn">exit</span> <span class="num">1</span>
+    ;;
+<span class="kw">esac</span></pre></div>
+    </div>
+
+    <h3>Activer les services dans la console</h3>
+    <div class="card-grid">
+      <div class="card">
+        <span class="card-icon">🔑</span>
+        <h4>Authentication</h4>
+        <p>Build → Authentication → Sign-in method → Apple. Activez "Apple" et renseignez le Service ID et la clé privée.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">🗄️</span>
+        <h4>Firestore Database</h4>
+        <p>Build → Firestore Database → Créer une base → Choisir la région (europe-west1). Commencez en mode verrouillé.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">📊</span>
+        <h4>Analytics</h4>
+        <p>Activé par défaut. Vérifiez que le compte Google Analytics est lié dans Paramètres du projet.</p>
+      </div>
+      <div class="card">
+        <span class="card-icon">💥</span>
+        <h4>Crashlytics</h4>
+        <p>Quality → Crashlytics → Activer. Nécessite d'avoir déclenché au moins un crash en debug pour l'initialisation.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 02 SPM ── -->
+  <section id="spm">
+    <div class="sec-head">
+      <div class="sec-num">02</div>
+      <div class="sec-info">
+        <h2>Intégration <em>SPM</em></h2>
+        <div class="sec-sub">Swift Package Manager · Dépendances · Targets</div>
+      </div>
+    </div>
+
+    <p>Firebase iOS SDK s'intègre via Swift Package Manager depuis la version 8+. C'est la méthode recommandée — plus besoin de CocoaPods.</p>
+
+    <h3>Ajouter le package Firebase</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-col"><div class="step-num">1</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Xcode → File → Add Package Dependencies</h4>
+          <p>URL du package : <code>https://github.com/firebase/firebase-ios-sdk</code>. Version : choisissez "Up to Next Major" avec la version actuelle (11.x au moment de la rédaction). Cliquez "Add Package".</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">2</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Choisir les libraries à ajouter</h4>
+          <p>Sélectionnez uniquement ce dont vous avez besoin. Chaque library ajoutée augmente la taille du binaire. N'ajoutez pas <code>FirebaseDatabase</code> si vous utilisez Firestore.</p>
+          <div class="step-note">Sélectionnez votre Target principal dans "Add to Target"</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Library SPM</th><th>Service Firebase</th><th>Taille indicative</th><th>Ajouter ?</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>FirebaseAuth</code></td>
+            <td>Authentication (Apple, Google…)</td>
+            <td>~2 MB</td>
+            <td><span class="badge b-fire">✓ Requis</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseFirestore</code></td>
+            <td>Base de données Firestore</td>
+            <td>~10 MB</td>
+            <td><span class="badge b-fire">✓ Requis</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseAnalytics</code></td>
+            <td>Analytics</td>
+            <td>~3 MB</td>
+            <td><span class="badge b-fire">✓ Requis</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseCrashlytics</code></td>
+            <td>Crash reporting</td>
+            <td>~1 MB</td>
+            <td><span class="badge b-fire">✓ Requis</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseStorage</code></td>
+            <td>Stockage fichiers (images, vidéos)</td>
+            <td>~2 MB</td>
+            <td><span class="badge b-grey">Optionnel</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseMessaging</code></td>
+            <td>Push notifications FCM</td>
+            <td>~2 MB</td>
+            <td><span class="badge b-grey">Optionnel</span></td>
+          </tr>
+          <tr>
+            <td><code>FirebaseRemoteConfig</code></td>
+            <td>Feature flags à distance</td>
+            <td>~1 MB</td>
+            <td><span class="badge b-grey">Optionnel</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-fire">
+      <span>🔥</span>
+      <p><strong>FirebaseAnalytics vs FirebaseAnalyticsWithoutAdIdSupport :</strong> si votre app n'affiche pas de publicités et ne veut pas demander l'ATT, utilisez <code>FirebaseAnalyticsWithoutAdIdSupport</code> à la place de <code>FirebaseAnalytics</code>. Cela évite d'avoir à déclarer l'usage de l'IDFA dans App Privacy Labels.</p>
+    </div>
+
+    <h3>Capability requises dans Xcode</h3>
+    <div class="field-table">
+      <div class="field-row">
+        <div class="field-name">Sign in with Apple</div>
+        <div class="field-desc">Target → Signing & Capabilities → + Capability → Sign in with Apple</div>
+        <div class="field-req"><span class="badge b-fire">Requis</span></div>
+      </div>
+      <div class="field-row">
+        <div class="field-name">Push Notifications</div>
+        <div class="field-desc">Requis si vous utilisez FCM (FirebaseMessaging)</div>
+        <div class="field-req"><span class="badge b-grey">Si FCM</span></div>
+      </div>
+      <div class="field-row">
+        <div class="field-name">Background Modes</div>
+        <div class="field-desc">Remote notifications — requis pour FCM en background</div>
+        <div class="field-req"><span class="badge b-grey">Si FCM</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── 03 INIT ── -->
+  <section id="init">
+    <div class="sec-head">
+      <div class="sec-num">03</div>
+      <div class="sec-info">
+        <h2><em>Initialisation</em> Firebase</h2>
+        <div class="sec-sub">FirebaseApp.configure · AppDelegate · @main</div>
+      </div>
+    </div>
+
+    <p>Firebase doit être initialisé <strong>avant tout accès à ses services</strong>, le plus tôt possible dans le cycle de vie de l'app. L'erreur la plus fréquente est d'appeler un service Firebase avant <code>FirebaseApp.configure()</code>.</p>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">MyApp.swift — initialisation Firebase dans @main</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">SwiftUI</span>
+<span class="kw">import</span> <span class="tp">Firebase</span>
+<span class="kw">import</span> <span class="tp">FirebaseCore</span>
+
+<span class="mac">@main</span>
+<span class="kw">struct</span> <span class="tp">MyApp</span>: <span class="proto">App</span> <span class="op">{</span>
+
+    <span class="cmt">// AppDelegate pour Firebase + push notifications</span>
+    <span class="mac">@UIApplicationDelegateAdaptor</span>(<span class="tp">AppDelegate</span>.<span class="kw">self</span>) <span class="kw">var</span> <span class="var">appDelegate</span>
+
+    <span class="mac">@StateObject</span> <span class="kw">private var</span> <span class="var">container</span> = <span class="tp">AppContainer</span>.shared
+
+    <span class="kw">var</span> <span class="var">body</span>: <span class="kw">some</span> <span class="tp">Scene</span> <span class="op">{</span>
+        <span class="fn">WindowGroup</span> <span class="op">{</span>
+            <span class="fn">AppRootView</span>()
+                .<span class="fn">environmentObject</span>(container)
+                .<span class="fn">environmentObject</span>(container.<span class="var">themeManager</span>)
+                .<span class="fn">preferredColorScheme</span>(container.<span class="var">themeManager</span>.<span class="var">current</span>.<span class="var">colorScheme</span>)
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">class</span> <span class="tp">AppDelegate</span>: <span class="tp">NSObject</span>, <span class="proto">UIApplicationDelegate</span> <span class="op">{</span>
+
+    <span class="kw">func</span> <span class="fn">application</span>(
+        <span class="var">_</span> <span class="var">application</span>: <span class="tp">UIApplication</span>,
+        didFinishLaunchingWithOptions <span class="var">launchOptions</span>: [<span class="tp">UIApplication</span>.<span class="tp">LaunchOptionsKey</span>: <span class="kw">Any</span>]<span class="op">?</span>
+    ) -> <span class="tp">Bool</span> <span class="op">{</span>
+
+        <span class="cmt">// ① Toujours en PREMIER — avant tout autre SDK</span>
+        <span class="tp">FirebaseApp</span>.<span class="fn">configure</span>()
+
+        <span class="cmt">// ② Crashlytics — active le crash handler</span>
+        <span class="tp">Crashlytics</span>.crashlytics().<span class="fn">setCrashlyticsCollectionEnabled</span>(
+            <span class="tp">AppConfiguration</span>.<span class="var">crashlyticsEnabled</span>
+        )
+
+        <span class="cmt">// ③ Analytics — désactiver en debug si souhaité</span>
+        <span class="tp">Analytics</span>.<span class="fn">setAnalyticsCollectionEnabled</span>(
+            <span class="tp">AppConfiguration</span>.<span class="var">analyticsEnabled</span>
+        )
+
+        <span class="kw">return true</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="callout c-green">
+      <span>✅</span>
+      <p><strong>AppConfiguration :</strong> on réutilise ici l'<code>AppConfiguration</code> défini dans Core — <code>analyticsEnabled</code> retourne <code>false</code> en Debug et <code>true</code> en Release. Crashlytics pareil. Cela évite de polluer vos données Analytics avec vos propres sessions de développement.</p>
+    </div>
+  </section>
+
+  <!-- ── 04 APPLE AUTH CONFIG ── -->
+  <section id="apple">
+    <div class="sec-head">
+      <div class="sec-num">04</div>
+      <div class="sec-info">
+        <h2>Sign in with <em>Apple</em></h2>
+        <div class="sec-sub">Console Firebase · Apple Developer · Service ID · Clé privée</div>
+      </div>
+    </div>
+
+    <p>Configurer Sign in with Apple avec Firebase nécessite des étapes <strong>à la fois sur le portail Apple Developer ET dans la console Firebase</strong>. Les deux doivent être synchronisés — c'est la source principale d'erreurs.</p>
+
+    <h3>Côté Apple Developer</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-col"><div class="step-num">1</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Activer Sign in with Apple sur l'App ID</h4>
+          <p>developer.apple.com → Identifiers → votre App ID → cochez "Sign in with Apple" → Save. Cela active la capability côté portail.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">2</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Créer un Service ID</h4>
+          <p>Identifiers → + → Services IDs. Identifiant : <code>com.votresociete.monapp.siwa</code> (différent du Bundle ID). Activez "Sign in with Apple" → Configure → ajoutez le domaine Firebase : <code>monapp-xxxxx.firebaseapp.com</code> et l'URL de retour : <code>https://monapp-xxxxx.firebaseapp.com/__/auth/handler</code></p>
+          <div class="step-note">Le domaine Firebase se trouve dans Firebase Console → Authentication → Sign-in method → Apple</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">3</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Créer une clé privée</h4>
+          <p>Clés → + → cochez "Sign in with Apple" → Configure → sélectionnez votre App ID principal. Téléchargez le fichier <code>.p8</code>. <strong>À faire une seule fois</strong> — impossible de retélécharger. Notez le Key ID (10 caractères).</p>
+          <div class="step-note">⚠ Stockez le .p8 en lieu sûr — jamais dans le repo git</div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Côté Firebase Console</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-col"><div class="step-num">4</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Configurer le provider Apple</h4>
+          <p>Authentication → Sign-in method → Apple → Activer. Renseignez :</p>
+          <div class="step-note">Services ID : com.votresociete.monapp.siwa</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-col"><div class="step-num">5</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Renseigner la clé OAuth</h4>
+          <p>Team ID (10 caractères, visible sur developer.apple.com) + Key ID (du fichier .p8) + contenu du fichier .p8. Ces informations permettent à Firebase de valider les tokens Apple côté serveur.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout c-blue">
+      <span>ℹ️</span>
+      <p><strong>Pourquoi Firebase a besoin du .p8 ?</strong> Quand un utilisateur se connecte avec Apple, l'app reçoit un <code>identityToken</code> JWT signé par Apple. Firebase doit vérifier ce token côté serveur en utilisant votre clé privée pour confirmer qu'il est authentique. Sans ça, Firebase ne peut pas créer l'utilisateur Firebase associé.</p>
+    </div>
+  </section>
+
+  <!-- ── 05 AUTH LAYER ── -->
+  <section id="authlayer">
+    <div class="sec-head">
+      <div class="sec-num">05</div>
+      <div class="sec-info">
+        <h2>Auth <em>Layer</em></h2>
+        <div class="sec-sub">AuthService · Nonce · Credential · User mapping</div>
+      </div>
+    </div>
+
+    <p>L'<code>AuthService</code> encapsule toute la logique Firebase Auth. Les ViewModels et UseCases ne voient jamais un type Firebase directement — ils travaillent avec des entités Domain (<code>AppUser</code>).</p>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Core/Constants/AuthConstants.swift</span></div>
+      <div class="code-body"><pre><span class="cmt">// MARK: — LAYER: Core — aucune dépendance Firebase ici</span>
+<span class="kw">enum</span> <span class="tp">AuthConstants</span> <span class="op">{</span>
+    <span class="kw">static let</span> <span class="var">appleProviderID</span> = <span class="str">"apple.com"</span>
+<span class="op">}</span>
+
+<span class="kw">enum</span> <span class="tp">StorageKeys</span> <span class="op">{</span>
+    <span class="kw">enum</span> <span class="tp">Keychain</span>: <span class="proto">String</span>, <span class="proto">CaseIterable</span> <span class="op">{</span>
+        <span class="kw">case</span> authToken          = <span class="str">"auth.token"</span>
+        <span class="kw">case</span> refreshToken       = <span class="str">"auth.refreshToken"</span>
+        <span class="kw">case</span> userID             = <span class="str">"user.id"</span>
+        <span class="kw">case</span> appleUserID        = <span class="str">"auth.apple.userID"</span>   <span class="cmt">// identifiant Apple stable</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Domain/Entities/AppUser.swift — entité Domain pure, pas de FirebaseUser</span></div>
+      <div class="code-body"><pre><span class="cmt">// MARK: — LAYER: Domain — aucun import Firebase</span>
+
+<span class="kw">struct</span> <span class="tp">AppUser</span>: <span class="proto">Equatable, Sendable</span> <span class="op">{</span>
+    <span class="kw">let</span> <span class="var">uid</span>:          <span class="tp">String</span>         <span class="cmt">// Firebase UID</span>
+    <span class="kw">let</span> <span class="var">email</span>:        <span class="tp">String</span><span class="op">?</span>
+    <span class="kw">let</span> <span class="var">displayName</span>:  <span class="tp">String</span><span class="op">?</span>
+    <span class="kw">let</span> <span class="var">photoURL</span>:     <span class="tp">URL</span><span class="op">?</span>
+    <span class="kw">let</span> <span class="var">isAnonymous</span>:  <span class="tp">Bool</span>
+    <span class="kw">let</span> <span class="var">isEmailVerified</span>: <span class="tp">Bool</span>
+    <span class="kw">let</span> <span class="var">createdAt</span>:    <span class="tp">Date</span><span class="op">?</span>
+
+    <span class="kw">var</span> <span class="var">initials</span>: <span class="tp">String</span> <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">name</span> = displayName <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="str">"?"</span> <span class="op">}</span>
+        <span class="kw">return</span> name.<span class="fn">split</span>(separator: <span class="str">" "</span>)
+            .<span class="fn">prefix</span>(<span class="num">2</span>)
+            .<span class="fn">compactMap</span>(<span class="op">{</span> <span class="var">$0</span>.first <span class="op">}</span>)
+            .<span class="fn">map</span>(<span class="tp">String</span>.init)
+            .<span class="fn">joined</span>()
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Data/Auth/AuthService.swift — Sign in with Apple complet</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">FirebaseAuth</span>
+<span class="kw">import</span> <span class="tp">AuthenticationServices</span>
+<span class="kw">import</span> <span class="tp">CryptoKit</span>
+
+<span class="cmt">// MARK: — LAYER: Data</span>
+<span class="mac">@MainActor</span>
+<span class="kw">final class</span> <span class="tp">AuthService</span>: <span class="proto">AuthServiceProtocol, ObservableObject</span> <span class="op">{</span>
+
+    <span class="mac">@Published</span> <span class="kw">private(set) var</span> <span class="var">currentUser</span>: <span class="tp">AppUser</span><span class="op">?</span>
+    <span class="kw">private var</span> <span class="var">stateListener</span>: <span class="tp">AuthStateDidChangeListenerHandle</span><span class="op">?</span>
+    <span class="cmt">// Nonce SHA256 — protège contre les replay attacks</span>
+    <span class="kw">private var</span> <span class="var">currentNonce</span>: <span class="tp">String</span><span class="op">?</span>
+    <span class="kw">private let</span> <span class="var">keychain</span>: <span class="tp">KeychainService</span>
+
+    <span class="kw">init</span>(<span class="var">keychain</span>: <span class="tp">KeychainService</span>) <span class="op">{</span>
+        <span class="kw">self</span>.<span class="var">keychain</span> = keychain
+        <span class="fn">observeAuthState</span>()
+    <span class="op">}</span>
+
+    <span class="kw">deinit</span> <span class="op">{</span>
+        <span class="kw">if let</span> <span class="var">h</span> = stateListener <span class="op">{</span> <span class="tp">Auth</span>.<span class="fn">auth</span>().<span class="fn">removeStateDidChangeListener</span>(h) <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Observer l'état d'authentification ─────────────</span>
+    <span class="kw">private func</span> <span class="fn">observeAuthState</span>() <span class="op">{</span>
+        stateListener = <span class="tp">Auth</span>.<span class="fn">auth</span>().<span class="fn">addStateDidChangeListener</span> <span class="op">{</span> [<span class="kw">weak self</span>] <span class="var">_</span>, <span class="var">user</span> <span class="kw">in</span>
+            <span class="fn">Task</span> <span class="op">{</span> <span class="kw">await</span> <span class="tp">MainActor</span>.<span class="fn">run</span> <span class="op">{</span>
+                <span class="kw">self</span><span class="op">?</span>.<span class="var">currentUser</span> = user.map(<span class="tp">AppUser</span>.init)
+                <span class="kw">if let</span> <span class="var">uid</span> = user<span class="op">?</span>.<span class="var">uid</span> <span class="op">{</span>
+                    <span class="kw">self</span><span class="op">?</span>.<span class="var">keychain</span>.<span class="fn">set</span>(uid, forKey: .<span class="var">userID</span>)
+                <span class="op">}</span>
+            <span class="op">}</span> <span class="op">}</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Préparer la requête Apple Sign In ──────────────</span>
+    <span class="kw">func</span> <span class="fn">prepareAppleRequest</span>(<span class="var">_</span> <span class="var">request</span>: <span class="tp">ASAuthorizationAppleIDRequest</span>) <span class="op">{</span>
+        <span class="kw">let</span> <span class="var">nonce</span> = <span class="fn">randomNonceString</span>()
+        currentNonce = nonce
+        request.<span class="var">requestedScopes</span> = [.fullName, .email]
+        request.<span class="var">nonce</span> = <span class="fn">sha256</span>(nonce)  <span class="cmt">// envoyé à Apple sous forme hashée</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Compléter la connexion Apple ───────────────────</span>
+    <span class="kw">func</span> <span class="fn">signInWithApple</span>(<span class="var">authorization</span>: <span class="tp">ASAuthorization</span>) <span class="kw">async throws</span> -> <span class="tp">AppUser</span> <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">appleIDCred</span> = authorization.<span class="var">credential</span> <span class="kw">as</span><span class="op">?</span> <span class="tp">ASAuthorizationAppleIDCredential</span>,
+              <span class="kw">let</span> <span class="var">nonce</span>        = currentNonce,
+              <span class="kw">let</span> <span class="var">tokenData</span>    = appleIDCred.<span class="var">identityToken</span>,
+              <span class="kw">let</span> <span class="var">tokenStr</span>     = <span class="tp">String</span>(data: tokenData, encoding: .utf8)
+        <span class="kw">else</span> <span class="op">{</span> <span class="kw">throw</span> <span class="tp">AuthError</span>.invalidCredential <span class="op">}</span>
+
+        <span class="cmt">// Construire le credential Firebase depuis le token Apple</span>
+        <span class="kw">let</span> <span class="var">credential</span> = <span class="tp">OAuthProvider</span>.<span class="fn">appleCredential</span>(
+            withIDToken:    tokenStr,
+            rawNonce:       nonce,       <span class="cmt">// nonce non hashé — Firebase le hashe et compare</span>
+            fullName:       appleIDCred.<span class="var">fullName</span>
+        )
+
+        <span class="kw">let</span> <span class="var">result</span> = <span class="kw">try await</span> <span class="tp">Auth</span>.<span class="fn">auth</span>().<span class="fn">signIn</span>(with: credential)
+
+        <span class="cmt">// Sauvegarder l'identifiant Apple stable dans le Keychain</span>
+        <span class="kw">if let</span> <span class="var">appleUID</span> = appleIDCred.<span class="var">user</span> <span class="op">{</span>
+            keychain.<span class="fn">set</span>(appleUID, forKey: .<span class="var">appleUserID</span>)
+        <span class="op">}</span>
+
+        <span class="kw">let</span> <span class="var">user</span> = <span class="tp">AppUser</span>(result.<span class="var">user</span>)
+        currentUser = user
+        <span class="kw">return</span> user
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Déconnexion ────────────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">signOut</span>() <span class="kw">throws</span> <span class="op">{</span>
+        <span class="kw">try</span> <span class="tp">Auth</span>.<span class="fn">auth</span>().<span class="fn">signOut</span>()
+        keychain.<span class="fn">clearAll</span>()
+        currentUser = <span class="kw">nil</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Vérifier la validité du token Apple côté client ─</span>
+    <span class="kw">func</span> <span class="fn">checkAppleCredentialState</span>() <span class="kw">async throws</span> -> <span class="tp">ASAuthorizationAppleIDProvider</span>.<span class="tp">CredentialState</span> <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">appleUID</span> = keychain.<span class="fn">get</span>(.<span class="var">appleUserID</span>) <span class="kw">else</span> <span class="op">{</span>
+            <span class="kw">return</span> .notFound
+        <span class="op">}</span>
+        <span class="kw">return try await</span> <span class="tp">ASAuthorizationAppleIDProvider</span>().<span class="fn">credentialState</span>(forUserID: appleUID)
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Helpers cryptographiques ───────────────────────</span>
+    <span class="kw">private func</span> <span class="fn">randomNonceString</span>(<span class="var">length</span>: <span class="tp">Int</span> = <span class="num">32</span>) -> <span class="tp">String</span> <span class="op">{</span>
+        <span class="kw">let</span> <span class="var">charset</span> = <span class="tp">Array</span>(<span class="str">"0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._"</span>)
+        <span class="kw">var</span> <span class="var">result</span> = <span class="str">""</span>
+        <span class="kw">var</span> <span class="var">remainingLength</span> = length
+        <span class="kw">while</span> remainingLength > <span class="num">0</span> <span class="op">{</span>
+            <span class="kw">let</span> <span class="var">randoms</span>: [<span class="tp">UInt8</span>] = (<span class="num">0</span>&lt;<span class="num">16</span>).<span class="fn">map</span> <span class="op">{</span> <span class="var">_</span> <span class="kw">in</span>
+                <span class="kw">var</span> <span class="var">r</span>: <span class="tp">UInt8</span> = <span class="num">0</span>
+                <span class="fn">SecRandomCopyBytes</span>(kSecRandomDefault, <span class="num">1</span>, &amp;r)
+                <span class="kw">return</span> r
+            <span class="op">}</span>
+            randoms.<span class="fn">forEach</span> <span class="op">{</span> <span class="var">r</span> <span class="kw">in</span>
+                <span class="kw">if</span> remainingLength == <span class="num">0</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+                <span class="kw">if</span> r < charset.<span class="var">count</span> <span class="op">{</span> result.<span class="fn">append</span>(charset[<span class="tp">Int</span>(r)]); remainingLength <span class="op">-=</span> <span class="num">1</span> <span class="op">}</span>
+            <span class="op">}</span>
+        <span class="op">}</span>
+        <span class="kw">return</span> result
+    <span class="op">}</span>
+
+    <span class="kw">private func</span> <span class="fn">sha256</span>(<span class="var">_</span> <span class="var">input</span>: <span class="tp">String</span>) -> <span class="tp">String</span> <span class="op">{</span>
+        <span class="tp">SHA256</span>.<span class="fn">hash</span>(data: <span class="tp">Data</span>(input.<span class="var">utf8</span>))
+            .<span class="fn">compactMap</span> <span class="op">{</span> <span class="fn">String</span>(format: <span class="str">"%02x"</span>, <span class="var">$0</span>) <span class="op">}</span>
+            .<span class="fn">joined</span>()
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// Mapping FirebaseAuth.User → Domain AppUser</span>
+<span class="kw">extension</span> <span class="tp">AppUser</span> <span class="op">{</span>
+    <span class="kw">init</span>(<span class="var">_</span> <span class="var">user</span>: <span class="tp">FirebaseAuth</span>.<span class="tp">User</span>) <span class="op">{</span>
+        <span class="kw">self</span>.<span class="var">uid</span>           = user.<span class="var">uid</span>
+        <span class="kw">self</span>.<span class="var">email</span>         = user.<span class="var">email</span>
+        <span class="kw">self</span>.<span class="var">displayName</span>   = user.<span class="var">displayName</span>
+        <span class="kw">self</span>.<span class="var">photoURL</span>      = user.<span class="var">photoURL</span>
+        <span class="kw">self</span>.<span class="var">isAnonymous</span>   = user.<span class="var">isAnonymous</span>
+        <span class="kw">self</span>.<span class="var">isEmailVerified</span> = user.<span class="var">isEmailVerified</span>
+        <span class="kw">self</span>.<span class="var">createdAt</span>     = user.<span class="var">metadata</span>.<span class="var">creationDate</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Presentation/Auth/SignInView.swift — bouton Apple natif</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">SwiftUI</span>
+<span class="kw">import</span> <span class="tp">AuthenticationServices</span>
+
+<span class="kw">struct</span> <span class="tp">SignInView</span>: <span class="proto">View</span> <span class="op">{</span>
+    <span class="mac">@StateObject</span> <span class="kw">private var</span> <span class="var">vm</span>: <span class="tp">SignInViewModel</span>
+    <span class="mac">@Environment</span>(\.<span class="var">colorScheme</span>) <span class="kw">private var</span> <span class="var">colorScheme</span>
+
+    <span class="kw">var</span> <span class="var">body</span>: <span class="kw">some</span> <span class="tp">View</span> <span class="op">{</span>
+        <span class="fn">VStack</span>(spacing: <span class="tp">DSSpacing</span>.<span class="var">xl</span>) <span class="op">{</span>
+            <span class="cmt">// Bouton Sign in with Apple natif Apple</span>
+            <span class="fn">SignInWithAppleButton</span>(.<span class="var">signIn</span>) <span class="op">{</span> <span class="var">request</span> <span class="kw">in</span>
+                <span class="cmt">// authService prépare la requête et génère le nonce</span>
+                vm.<span class="var">authService</span>.<span class="fn">prepareAppleRequest</span>(request)
+            <span class="op">}</span> onCompletion: <span class="op">{</span> <span class="var">result</span> <span class="kw">in</span>
+                <span class="fn">Task</span> <span class="op">{</span> <span class="kw">await</span> vm.<span class="fn">handleAppleResult</span>(result) <span class="op">}</span>
+            <span class="op">}</span>
+            .<span class="fn">signInWithAppleButtonStyle</span>(colorScheme == .dark ? .white : .black)
+            .<span class="fn">frame</span>(height: <span class="num">50</span>)
+            .<span class="fn">padding</span>(.<span class="var">horizontal</span>, <span class="tp">DSSpacing</span>.<span class="var">xl</span>)
+
+            <span class="kw">if let</span> <span class="var">error</span> = vm.<span class="var">errorMessage</span> <span class="op">{</span>
+                <span class="fn">Text</span>(error)
+                    .<span class="fn">font</span>(<span class="tp">DSFont</span>.<span class="var">footnote</span>)
+                    .<span class="fn">foregroundStyle</span>(<span class="tp">DSColor</span>.<span class="var">error</span>)
+                    .<span class="fn">multilineTextAlignment</span>(.<span class="var">center</span>)
+            <span class="op">}</span>
+        <span class="op">}</span>
+        .<span class="fn">overlay</span> <span class="op">{</span> <span class="kw">if</span> vm.<span class="var">isLoading</span> <span class="op">{</span> <span class="fn">ProgressView</span>() <span class="op">}</span> <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="mac">@MainActor</span>
+<span class="kw">final class</span> <span class="tp">SignInViewModel</span>: <span class="proto">ObservableObject</span> <span class="op">{</span>
+    <span class="mac">@Published</span> <span class="kw">var</span> <span class="var">isLoading</span>    = <span class="kw">false</span>
+    <span class="mac">@Published</span> <span class="kw">var</span> <span class="var">errorMessage</span>: <span class="tp">String</span><span class="op">?</span>
+    <span class="kw">let</span> <span class="var">authService</span>: <span class="tp">AuthService</span>
+
+    <span class="kw">func</span> <span class="fn">handleAppleResult</span>(<span class="var">_</span> <span class="var">result</span>: <span class="tp">Result</span>&lt;<span class="tp">ASAuthorization</span>, <span class="tp">Error</span>&gt;) <span class="kw">async</span> <span class="op">{</span>
+        isLoading = <span class="kw">true</span>; errorMessage = <span class="kw">nil</span>
+        <span class="kw">defer</span> <span class="op">{</span> isLoading = <span class="kw">false</span> <span class="op">}</span>
+        <span class="kw">do</span> <span class="op">{</span>
+            <span class="kw">let</span> <span class="var">auth</span> = <span class="kw">try</span> result.<span class="fn">get</span>()
+            <span class="kw">try await</span> authService.<span class="fn">signInWithApple</span>(authorization: auth)
+        <span class="op">}</span> <span class="kw">catch</span> <span class="tp">ASAuthorizationError</span>.<span class="var">canceled</span> <span class="op">{</span>
+            <span class="cmt">// Annulation par l'utilisateur — ne pas afficher d'erreur</span>
+        <span class="op">}</span> <span class="kw">catch</span> <span class="op">{</span>
+            errorMessage = error.<span class="var">localizedDescription</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+  </section>
+
+  <!-- ── 06 FIRESTORE ── -->
+  <section id="firestore">
+    <div class="sec-head">
+      <div class="sec-num">06</div>
+      <div class="sec-info">
+        <h2><em>Firestore</em> — Data Layer</h2>
+        <div class="sec-sub">Repository · Codable · Real-time listeners · Collections</div>
+      </div>
+    </div>
+
+    <p>Firestore s'intègre dans la couche Data via un repository. Les documents Firestore sont mappés en entités Domain via <code>Codable</code>. <strong>Aucune référence à Firestore ne sort de la couche Data.</strong></p>
+
+    <h3>Structure des collections</h3>
+    <div class="tree">
+<pre><span class="td">firestore/</span>
+├── <span class="td">users/</span>                         <span class="tc">← collection</span>
+│   └── <span class="td">{uid}/</span>                     <span class="tc">← document (=Firebase UID)</span>
+│       ├── <span class="tf">displayName: String</span>
+│       ├── <span class="tf">email: String?</span>
+│       ├── <span class="tf">subscriptionTier: String</span>
+│       ├── <span class="tf">createdAt: Timestamp</span>
+│       └── <span class="td">settings/</span>             <span class="tc">← sous-collection</span>
+│           └── <span class="td">preferences/</span>
+│
+├── <span class="td">tasks/</span>                         <span class="tc">← collection racine</span>
+│   └── <span class="td">{taskID}/</span>
+│       ├── <span class="tf">ownerUID: String</span>       <span class="tc">← pour filtrage + rules</span>
+│       ├── <span class="tf">title: String</span>
+│       ├── <span class="tf">notes: String</span>
+│       ├── <span class="tf">isDone: Bool</span>
+│       ├── <span class="tf">priority: Int</span>
+│       ├── <span class="tf">dueDate: Timestamp?</span>
+│       └── <span class="tf">createdAt: Timestamp</span></pre>
+    </div>
+
+    <div class="callout c-blue">
+      <span>ℹ️</span>
+      <p><strong>Collection racine vs sous-collection :</strong> les tâches sont dans une collection racine <code>tasks/</code> avec un champ <code>ownerUID</code> plutôt que dans <code>users/{uid}/tasks/</code>. Cela permet des requêtes globales (admin) et facilite les règles de sécurité. Les deux approches fonctionnent — choisissez selon vos besoins.</p>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Core/Constants/FirestoreConstants.swift — jamais de string collection en dur ailleurs</span></div>
+      <div class="code-body"><pre><span class="kw">enum</span> <span class="tp">FirestoreConstants</span> <span class="op">{</span>
+    <span class="kw">enum</span> <span class="tp">Collections</span> <span class="op">{</span>
+        <span class="kw">static let</span> <span class="var">users</span>  = <span class="str">"users"</span>
+        <span class="kw">static let</span> <span class="var">tasks</span>  = <span class="str">"tasks"</span>
+    <span class="op">}</span>
+    <span class="kw">enum</span> <span class="tp">Fields</span> <span class="op">{</span>
+        <span class="kw">static let</span> <span class="var">ownerUID</span>   = <span class="str">"ownerUID"</span>
+        <span class="kw">static let</span> <span class="var">createdAt</span>  = <span class="str">"createdAt"</span>
+        <span class="kw">static let</span> <span class="var">isDone</span>     = <span class="str">"isDone"</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Data/Firestore/TaskFirestoreRepository.swift</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">FirebaseFirestore</span>
+<span class="kw">import</span> <span class="tp">FirebaseAuth</span>
+
+<span class="cmt">// MARK: — LAYER: Data — FirebaseFirestore importé ici seulement</span>
+<span class="kw">final class</span> <span class="tp">TaskFirestoreRepository</span>: <span class="proto">TaskRepositoryProtocol</span> <span class="op">{</span>
+
+    <span class="kw">private let</span> <span class="var">db</span> = <span class="tp">Firestore</span>.<span class="fn">firestore</span>()
+    <span class="kw">private var</span> <span class="var">listener</span>: <span class="tp">ListenerRegistration</span><span class="op">?</span>
+
+    <span class="kw">private var</span> <span class="var">collection</span>: <span class="tp">CollectionReference</span> <span class="op">{</span>
+        db.<span class="fn">collection</span>(<span class="tp">FirestoreConstants</span>.<span class="tp">Collections</span>.<span class="var">tasks</span>)
+    <span class="op">}</span>
+
+    <span class="kw">private var</span> <span class="var">currentUID</span>: <span class="tp">String</span><span class="op">?</span> <span class="op">{</span>
+        <span class="tp">Auth</span>.<span class="fn">auth</span>().<span class="var">currentUser</span><span class="op">?</span>.<span class="var">uid</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Fetch one-shot ─────────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">fetchAll</span>() <span class="kw">async throws</span> -> [<span class="tp">Task</span>] <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">uid</span> = currentUID <span class="kw">else</span> <span class="op">{</span> <span class="kw">throw</span> <span class="tp">AuthError</span>.notAuthenticated <span class="op">}</span>
+
+        <span class="kw">let</span> <span class="var">snapshot</span> = <span class="kw">try await</span> collection
+            .<span class="fn">whereField</span>(<span class="tp">FirestoreConstants</span>.<span class="tp">Fields</span>.<span class="var">ownerUID</span>, isEqualTo: uid)
+            .<span class="fn">order</span>(by: <span class="tp">FirestoreConstants</span>.<span class="tp">Fields</span>.<span class="var">createdAt</span>, descending: <span class="kw">true</span>)
+            .<span class="fn">getDocuments</span>()
+
+        <span class="kw">return</span> snapshot.<span class="var">documents</span>.<span class="fn">compactMap</span> <span class="op">{</span> <span class="kw">try</span><span class="op">?</span> <span class="var">$0</span>.<span class="fn">data</span>(as: <span class="tp">TaskDTO</span>.<span class="kw">self</span>).<span class="fn">toDomain</span>() <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Listener temps réel ────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">observeAll</span>(<span class="var">onChange</span>: <span class="mac">@escaping</span> ([<span class="tp">Task</span>]) -> <span class="tp">Void</span>) <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">uid</span> = currentUID <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+        listener = collection
+            .<span class="fn">whereField</span>(<span class="tp">FirestoreConstants</span>.<span class="tp">Fields</span>.<span class="var">ownerUID</span>, isEqualTo: uid)
+            .<span class="fn">order</span>(by: <span class="tp">FirestoreConstants</span>.<span class="tp">Fields</span>.<span class="var">createdAt</span>, descending: <span class="kw">true</span>)
+            .<span class="fn">addSnapshotListener</span> <span class="op">{</span> <span class="var">snapshot</span>, <span class="var">_</span> <span class="kw">in</span>
+                <span class="kw">let</span> <span class="var">tasks</span> = snapshot<span class="op">?</span>.<span class="var">documents</span>
+                    .<span class="fn">compactMap</span> <span class="op">{</span> <span class="kw">try</span><span class="op">?</span> <span class="var">$0</span>.<span class="fn">data</span>(as: <span class="tp">TaskDTO</span>.<span class="kw">self</span>).<span class="fn">toDomain</span>() <span class="op">}</span>
+                    <span class="op">??</span> []
+                <span class="fn">onChange</span>(tasks)
+            <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">stopObserving</span>() <span class="op">{</span> listener<span class="op">?</span>.<span class="fn">remove</span>() <span class="op">}</span>
+
+    <span class="cmt">// ── Créer ──────────────────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">create</span>(<span class="var">_</span> <span class="var">task</span>: <span class="tp">Task</span>) <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">uid</span> = currentUID <span class="kw">else</span> <span class="op">{</span> <span class="kw">throw</span> <span class="tp">AuthError</span>.notAuthenticated <span class="op">}</span>
+        <span class="kw">var</span> <span class="var">dto</span> = <span class="tp">TaskDTO</span>(task, ownerUID: uid)
+        <span class="kw">try</span> collection.<span class="fn">document</span>(task.<span class="var">id</span>.<span class="var">uuidString</span>).<span class="fn">setData</span>(from: dto)
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Mettre à jour ──────────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">update</span>(<span class="var">_</span> <span class="var">task</span>: <span class="tp">Task</span>) <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">try</span> collection.<span class="fn">document</span>(task.<span class="var">id</span>.<span class="var">uuidString</span>).<span class="fn">setData</span>(from: <span class="tp">TaskDTO</span>(task, ownerUID: <span class="str">""</span>), merge: <span class="kw">true</span>)
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Supprimer ──────────────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">delete</span>(<span class="var">id</span>: <span class="tp">UUID</span>) <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">try await</span> collection.<span class="fn">document</span>(id.<span class="var">uuidString</span>).<span class="fn">delete</span>()
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// ── DTO — objet de transfert pour Firestore ─────────</span>
+<span class="kw">struct</span> <span class="tp">TaskDTO</span>: <span class="proto">Codable</span> <span class="op">{</span>
+    <span class="kw">let</span> <span class="var">id</span>:        <span class="tp">String</span>
+    <span class="kw">let</span> <span class="var">ownerUID</span>:  <span class="tp">String</span>
+    <span class="kw">let</span> <span class="var">title</span>:     <span class="tp">String</span>
+    <span class="kw">let</span> <span class="var">notes</span>:     <span class="tp">String</span>
+    <span class="kw">let</span> <span class="var">isDone</span>:    <span class="tp">Bool</span>
+    <span class="kw">let</span> <span class="var">priority</span>:  <span class="tp">Int</span>
+    <span class="kw">let</span> <span class="var">dueDate</span>:   <span class="tp">Date</span><span class="op">?</span>
+    <span class="mac">@ServerTimestamp</span> <span class="kw">var</span> <span class="var">createdAt</span>: <span class="tp">Date</span><span class="op">?</span>   <span class="cmt">// auto-généré par Firestore</span>
+
+    <span class="kw">init</span>(<span class="var">_</span> <span class="var">task</span>: <span class="tp">Task</span>, <span class="var">ownerUID</span>: <span class="tp">String</span>) <span class="op">{</span>
+        <span class="kw">self</span>.<span class="var">id</span>       = task.<span class="var">id</span>.<span class="var">uuidString</span>
+        <span class="kw">self</span>.<span class="var">ownerUID</span> = ownerUID
+        <span class="kw">self</span>.<span class="var">title</span>    = task.<span class="var">title</span>
+        <span class="kw">self</span>.<span class="var">notes</span>    = task.<span class="var">notes</span>
+        <span class="kw">self</span>.<span class="var">isDone</span>   = task.<span class="var">isDone</span>
+        <span class="kw">self</span>.<span class="var">priority</span> = task.<span class="var">priority</span>
+        <span class="kw">self</span>.<span class="var">dueDate</span>  = task.<span class="var">dueDate</span>
+        <span class="kw">self</span>.<span class="var">createdAt</span> = <span class="kw">nil</span>
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">toDomain</span>() -> <span class="tp">Task</span><span class="op">?</span> <span class="op">{</span>
+        <span class="kw">guard let</span> <span class="var">uuid</span> = <span class="tp">UUID</span>(uuidString: id) <span class="kw">else</span> <span class="op">{</span> <span class="kw">return nil</span> <span class="op">}</span>
+        <span class="kw">return</span> <span class="tp">Task</span>(id: uuid, title: title, notes: notes,
+                     isDone: isDone, priority: priority, dueDate: dueDate)
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+  </section>
+
+  <!-- ── 07 RULES ── -->
+  <section id="rules">
+    <div class="sec-head">
+      <div class="sec-num">07</div>
+      <div class="sec-info">
+        <h2>Security <em>Rules</em></h2>
+        <div class="sec-sub">Firestore Rules · Auth guards · Validation</div>
+      </div>
+    </div>
+
+    <p>Les Security Rules Firestore sont votre dernière ligne de défense. Elles s'exécutent côté serveur — un utilisateur malveillant qui contournerait votre app ne peut pas accéder aux données d'un autre.</p>
+
+    <div class="callout c-red">
+      <span>🚨</span>
+      <p><strong>Règle de départ :</strong> commencez toujours par <code>allow read, write: if false;</code> sur toutes les collections, puis ouvrez uniquement ce qui est nécessaire. Ne faites jamais l'inverse (tout ouvrir et restreindre).</p>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">firestore.rules — règles complètes production-ready</span></div>
+      <div class="code-body"><pre><span class="kw">rules_version</span> = <span class="str">'2'</span>;
+<span class="kw">service</span> <span class="tp">cloud.firestore</span> <span class="op">{</span>
+  <span class="kw">match</span> /<span class="tp">databases</span>/(<span class="var">database</span>)/<span class="tp">documents</span> <span class="op">{</span>
+
+    <span class="cmt">// ── Helpers ──────────────────────────────────────</span>
+    <span class="kw">function</span> <span class="fn">isAuthenticated</span>() <span class="op">{</span>
+      <span class="kw">return</span> request.<span class="var">auth</span> != <span class="kw">null</span>;
+    <span class="op">}</span>
+
+    <span class="kw">function</span> <span class="fn">isOwner</span>(<span class="var">uid</span>) <span class="op">{</span>
+      <span class="kw">return</span> <span class="fn">isAuthenticated</span>() <span class="op">&amp;&amp;</span> request.<span class="var">auth</span>.<span class="var">uid</span> == uid;
+    <span class="op">}</span>
+
+    <span class="kw">function</span> <span class="fn">isValidTask</span>() <span class="op">{</span>
+      <span class="kw">let</span> <span class="var">data</span> = request.<span class="var">resource</span>.<span class="var">data</span>;
+      <span class="kw">return</span> data.<span class="var">title</span> <span class="kw">is</span> <span class="tp">string</span>
+          <span class="op">&amp;&amp;</span> data.<span class="var">title</span>.<span class="fn">size</span>() > <span class="num">0</span>
+          <span class="op">&amp;&amp;</span> data.<span class="var">title</span>.<span class="fn">size</span>() &lt;= <span class="num">200</span>
+          <span class="op">&amp;&amp;</span> data.<span class="var">isDone</span> <span class="kw">is</span> <span class="tp">bool</span>
+          <span class="op">&amp;&amp;</span> data.<span class="var">priority</span> <span class="kw">is</span> <span class="tp">int</span>
+          <span class="op">&amp;&amp;</span> data.<span class="var">ownerUID</span> == request.<span class="var">auth</span>.<span class="var">uid</span>;  <span class="cmt">// owner = user connecté</span>
+    <span class="op">}</span>
+
+    <span class="kw">function</span> <span class="fn">isNotChangingOwner</span>() <span class="op">{</span>
+      <span class="kw">return</span> !(<span class="str">'ownerUID'</span> <span class="kw">in</span> request.<span class="var">resource</span>.<span class="var">data</span>.<span class="fn">diff</span>(resource.<span class="var">data</span>).<span class="var">affectedKeys</span>());
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Users ─────────────────────────────────────────</span>
+    <span class="kw">match</span> /users/<span class="op">{</span><span class="var">uid</span><span class="op">}</span> <span class="op">{</span>
+      <span class="cmt">// Lecture de son propre profil uniquement</span>
+      <span class="kw">allow</span> <span class="fn">read</span>:   <span class="kw">if</span> <span class="fn">isOwner</span>(uid);
+      <span class="cmt">// Création lors du premier sign in</span>
+      <span class="kw">allow</span> <span class="fn">create</span>: <span class="kw">if</span> <span class="fn">isOwner</span>(uid);
+      <span class="cmt">// Mise à jour sauf les champs sensibles</span>
+      <span class="kw">allow</span> <span class="fn">update</span>: <span class="kw">if</span> <span class="fn">isOwner</span>(uid)
+                    <span class="op">&amp;&amp;</span> !(<span class="str">'createdAt'</span> <span class="kw">in</span> request.<span class="var">resource</span>.<span class="var">data</span>.<span class="fn">diff</span>(resource.<span class="var">data</span>).<span class="var">affectedKeys</span>());
+      <span class="kw">allow</span> <span class="fn">delete</span>: <span class="kw">if</span> <span class="kw">false</span>;  <span class="cmt">// jamais de suppression de profil</span>
+    <span class="op">}</span>
+
+    <span class="cmt">// ── Tasks ─────────────────────────────────────────</span>
+    <span class="kw">match</span> /tasks/<span class="op">{</span><span class="var">taskId</span><span class="op">}</span> <span class="op">{</span>
+      <span class="cmt">// Lire uniquement ses propres tâches</span>
+      <span class="kw">allow</span> <span class="fn">read</span>:   <span class="kw">if</span> <span class="fn">isAuthenticated</span>()
+                    <span class="op">&amp;&amp;</span> resource.<span class="var">data</span>.<span class="var">ownerUID</span> == request.<span class="var">auth</span>.<span class="var">uid</span>;
+      <span class="cmt">// Créer une tâche avec validation</span>
+      <span class="kw">allow</span> <span class="fn">create</span>: <span class="kw">if</span> <span class="fn">isAuthenticated</span>() <span class="op">&amp;&amp;</span> <span class="fn">isValidTask</span>();
+      <span class="cmt">// Mettre à jour sans changer le propriétaire</span>
+      <span class="kw">allow</span> <span class="fn">update</span>: <span class="kw">if</span> <span class="fn">isAuthenticated</span>()
+                    <span class="op">&amp;&amp;</span> resource.<span class="var">data</span>.<span class="var">ownerUID</span> == request.<span class="var">auth</span>.<span class="var">uid</span>
+                    <span class="op">&amp;&amp;</span> <span class="fn">isNotChangingOwner</span>();
+      <span class="cmt">// Supprimer ses propres tâches</span>
+      <span class="kw">allow</span> <span class="fn">delete</span>: <span class="kw">if</span> <span class="fn">isAuthenticated</span>()
+                    <span class="op">&amp;&amp;</span> resource.<span class="var">data</span>.<span class="var">ownerUID</span> == request.<span class="var">auth</span>.<span class="var">uid</span>;
+    <span class="op">}</span>
+  <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="callout c-green">
+      <span>✅</span>
+      <p><strong>Tester les rules localement :</strong> utilisez l'émulateur Firebase (<code>firebase emulators:start</code>) et le <code>FirebaseEmulatorSuite</code> pour tester vos rules sans toucher à la production. Ajoutez des tests de rules avec <code>@firebase/rules-unit-testing</code> dans votre CI.</p>
+    </div>
+  </section>
+
+  <!-- ── 08 ANALYTICS ── -->
+  <section id="analytics">
+    <div class="sec-head">
+      <div class="sec-num">08</div>
+      <div class="sec-info">
+        <h2>Firebase <em>Analytics</em></h2>
+        <div class="sec-sub">Events · User Properties · AnalyticsService · Wrapper typé</div>
+      </div>
+    </div>
+
+    <p>Wrappez toujours Firebase Analytics dans un service — jamais d'appels directs à <code>Analytics.logEvent()</code> dans les ViewModels ou les vues. Cela permet de changer de provider analytics sans toucher au code métier.</p>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Core/Constants/AnalyticsEvents.swift — events typés, jamais de string en dur</span></div>
+      <div class="code-body"><pre><span class="cmt">// MARK: — LAYER: Core — pas d'import Firebase</span>
+
+<span class="kw">enum</span> <span class="tp">AnalyticsEvent</span> <span class="op">{</span>
+
+    <span class="cmt">// ── Auth ──────────────────────────────────────────</span>
+    <span class="kw">case</span> <span class="fn">signInSuccess</span>(<span class="var">method</span>: <span class="tp">String</span>)
+    <span class="kw">case</span> signInFailed
+    <span class="kw">case</span> signOut
+
+    <span class="cmt">// ── Onboarding ────────────────────────────────────</span>
+    <span class="kw">case</span> <span class="fn">onboardingPageViewed</span>(<span class="var">index</span>: <span class="tp">Int</span>)
+    <span class="kw">case</span> onboardingCompleted
+    <span class="kw">case</span> onboardingSkipped
+
+    <span class="cmt">// ── Tasks ─────────────────────────────────────────</span>
+    <span class="kw">case</span> taskCreated
+    <span class="kw">case</span> taskCompleted
+    <span class="kw">case</span> taskDeleted
+    <span class="kw">case</span> <span class="fn">taskLimitReached</span>(<span class="var">currentCount</span>: <span class="tp">Int</span>)
+
+    <span class="cmt">// ── Paywall ───────────────────────────────────────</span>
+    <span class="kw">case</span> <span class="fn">paywallViewed</span>(<span class="var">source</span>: <span class="tp">String</span>)
+    <span class="kw">case</span> <span class="fn">purchaseStarted</span>(<span class="var">productID</span>: <span class="tp">String</span>)
+    <span class="kw">case</span> <span class="fn">purchaseSuccess</span>(<span class="var">productID</span>: <span class="tp">String</span>)
+    <span class="kw">case</span> purchaseFailed
+    <span class="kw">case</span> purchaseCancelled
+
+    <span class="cmt">// ── Nom et paramètres pour Firebase ───────────────</span>
+    <span class="kw">var</span> <span class="var">name</span>: <span class="tp">String</span> <span class="op">{</span>
+        <span class="kw">switch</span> <span class="kw">self</span> <span class="op">{</span>
+        <span class="kw">case</span> .<span class="fn">signInSuccess</span>:       <span class="kw">return</span> <span class="str">"sign_in_success"</span>
+        <span class="kw">case</span> .signInFailed:        <span class="kw">return</span> <span class="str">"sign_in_failed"</span>
+        <span class="kw">case</span> .signOut:             <span class="kw">return</span> <span class="str">"sign_out"</span>
+        <span class="kw">case</span> .<span class="fn">onboardingPageViewed</span>:<span class="kw">return</span> <span class="str">"onboarding_page_viewed"</span>
+        <span class="kw">case</span> .onboardingCompleted:  <span class="kw">return</span> <span class="str">"onboarding_completed"</span>
+        <span class="kw">case</span> .onboardingSkipped:    <span class="kw">return</span> <span class="str">"onboarding_skipped"</span>
+        <span class="kw">case</span> .taskCreated:          <span class="kw">return</span> <span class="str">"task_created"</span>
+        <span class="kw">case</span> .taskCompleted:        <span class="kw">return</span> <span class="str">"task_completed"</span>
+        <span class="kw">case</span> .taskDeleted:          <span class="kw">return</span> <span class="str">"task_deleted"</span>
+        <span class="kw">case</span> .<span class="fn">taskLimitReached</span>:    <span class="kw">return</span> <span class="str">"task_limit_reached"</span>
+        <span class="kw">case</span> .<span class="fn">paywallViewed</span>:       <span class="kw">return</span> <span class="str">"paywall_viewed"</span>
+        <span class="kw">case</span> .<span class="fn">purchaseStarted</span>:     <span class="kw">return</span> <span class="str">"purchase_started"</span>
+        <span class="kw">case</span> .<span class="fn">purchaseSuccess</span>:     <span class="kw">return</span> <span class="str">"purchase_success"</span>
+        <span class="kw">case</span> .purchaseFailed:       <span class="kw">return</span> <span class="str">"purchase_failed"</span>
+        <span class="kw">case</span> .purchaseCancelled:    <span class="kw">return</span> <span class="str">"purchase_cancelled"</span>
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="kw">var</span> <span class="var">parameters</span>: [<span class="tp">String</span>: <span class="kw">Any</span>] <span class="op">{</span>
+        <span class="kw">switch</span> <span class="kw">self</span> <span class="op">{</span>
+        <span class="kw">case</span> .<span class="fn">signInSuccess</span>(<span class="kw">let</span> <span class="var">m</span>):          <span class="kw">return</span> [<span class="str">"method"</span>: m]
+        <span class="kw">case</span> .<span class="fn">onboardingPageViewed</span>(<span class="kw">let</span> <span class="var">i</span>):    <span class="kw">return</span> [<span class="str">"page_index"</span>: i]
+        <span class="kw">case</span> .<span class="fn">taskLimitReached</span>(<span class="kw">let</span> <span class="var">c</span>):       <span class="kw">return</span> [<span class="str">"current_count"</span>: c]
+        <span class="kw">case</span> .<span class="fn">paywallViewed</span>(<span class="kw">let</span> <span class="var">src</span>):        <span class="kw">return</span> [<span class="str">"source"</span>: src]
+        <span class="kw">case</span> .<span class="fn">purchaseStarted</span>(<span class="kw">let</span> <span class="var">pid</span>),
+             .<span class="fn">purchaseSuccess</span>(<span class="kw">let</span> <span class="var">pid</span>):    <span class="kw">return</span> [<span class="str">"product_id"</span>: pid]
+        <span class="kw">default</span>:                             <span class="kw">return</span> [:]
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Infrastructure/AnalyticsService.swift</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">FirebaseAnalytics</span>
+
+<span class="cmt">// MARK: — LAYER: Infrastructure</span>
+<span class="kw">protocol</span> <span class="proto">AnalyticsServiceProtocol</span>: <span class="proto">Sendable</span> <span class="op">{</span>
+    <span class="kw">func</span> <span class="fn">log</span>(<span class="var">_</span> <span class="var">event</span>: <span class="tp">AnalyticsEvent</span>)
+    <span class="kw">func</span> <span class="fn">setUserProperty</span>(<span class="var">_</span> <span class="var">value</span>: <span class="tp">String</span><span class="op">?</span>, forName name: <span class="tp">String</span>)
+    <span class="kw">func</span> <span class="fn">setUserID</span>(<span class="var">_</span> <span class="var">id</span>: <span class="tp">String</span><span class="op">?</span>)
+    <span class="kw">func</span> <span class="fn">setScreen</span>(<span class="var">name</span>: <span class="tp">String</span>, <span class="var">class</span> screenClass: <span class="tp">String</span>)
+<span class="op">}</span>
+
+<span class="kw">final class</span> <span class="tp">FirebaseAnalyticsService</span>: <span class="proto">AnalyticsServiceProtocol</span>, <span class="proto">Sendable</span> <span class="op">{</span>
+
+    <span class="kw">func</span> <span class="fn">log</span>(<span class="var">_</span> <span class="var">event</span>: <span class="tp">AnalyticsEvent</span>) <span class="op">{</span>
+        <span class="kw">guard</span> <span class="tp">AppConfiguration</span>.<span class="var">analyticsEnabled</span> <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+        <span class="tp">Analytics</span>.<span class="fn">logEvent</span>(event.<span class="var">name</span>, parameters: event.<span class="var">parameters</span>.<span class="var">isEmpty</span> ? <span class="kw">nil</span> : event.<span class="var">parameters</span>)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">setUserProperty</span>(<span class="var">_</span> <span class="var">value</span>: <span class="tp">String</span><span class="op">?</span>, forName name: <span class="tp">String</span>) <span class="op">{</span>
+        <span class="kw">guard</span> <span class="tp">AppConfiguration</span>.<span class="var">analyticsEnabled</span> <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+        <span class="tp">Analytics</span>.<span class="fn">setUserProperty</span>(value, forName: name)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">setUserID</span>(<span class="var">_</span> <span class="var">id</span>: <span class="tp">String</span><span class="op">?</span>) <span class="op">{</span>
+        <span class="kw">guard</span> <span class="tp">AppConfiguration</span>.<span class="var">analyticsEnabled</span> <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+        <span class="tp">Analytics</span>.<span class="fn">setUserID</span>(id)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">setScreen</span>(<span class="var">name</span>: <span class="tp">String</span>, <span class="var">class</span> screenClass: <span class="tp">String</span>) <span class="op">{</span>
+        <span class="kw">guard</span> <span class="tp">AppConfiguration</span>.<span class="var">analyticsEnabled</span> <span class="kw">else</span> <span class="op">{</span> <span class="kw">return</span> <span class="op">}</span>
+        <span class="tp">Analytics</span>.<span class="fn">logEvent</span>(<span class="tp">AnalyticsEventScreenView</span>, parameters: [
+            <span class="tp">AnalyticsParameterScreenName</span>:  name,
+            <span class="tp">AnalyticsParameterScreenClass</span>: screenClass
+        ])
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// Mock pour les tests et le debug</span>
+<span class="kw">final class</span> <span class="tp">MockAnalyticsService</span>: <span class="proto">AnalyticsServiceProtocol</span>, <span class="proto">Sendable</span> <span class="op">{</span>
+    <span class="kw">func</span> <span class="fn">log</span>(<span class="var">_</span> <span class="var">event</span>: <span class="tp">AnalyticsEvent</span>) <span class="op">{</span>
+        <span class="fn">print</span>(<span class="str">"[Analytics] \(event.name) \(event.parameters)"</span>)
+    <span class="op">}</span>
+    <span class="kw">func</span> <span class="fn">setUserProperty</span>(<span class="var">_</span> <span class="var">v</span>: <span class="tp">String</span><span class="op">?</span>, forName <span class="var">n</span>: <span class="tp">String</span>) <span class="op">{}</span>
+    <span class="kw">func</span> <span class="fn">setUserID</span>(<span class="var">_</span> <span class="var">id</span>: <span class="tp">String</span><span class="op">?</span>) <span class="op">{}</span>
+    <span class="kw">func</span> <span class="fn">setScreen</span>(<span class="var">name</span>: <span class="tp">String</span>, <span class="var">class</span> <span class="var">c</span>: <span class="tp">String</span>) <span class="op">{}</span>
+<span class="op">}</span>
+
+<span class="cmt">// ViewModifier pour le tracking automatique d'écran</span>
+<span class="kw">struct</span> <span class="tp">ScreenTrackingModifier</span>: <span class="proto">ViewModifier</span> <span class="op">{</span>
+    <span class="kw">let</span> <span class="var">screenName</span>:  <span class="tp">String</span>
+    <span class="kw">let</span> <span class="var">screenClass</span>: <span class="tp">String</span>
+    <span class="mac">@EnvironmentObject</span> <span class="kw">private var</span> <span class="var">container</span>: <span class="tp">AppContainer</span>
+
+    <span class="kw">func</span> <span class="fn">body</span>(<span class="var">content</span>: <span class="tp">Content</span>) -> <span class="kw">some</span> <span class="tp">View</span> <span class="op">{</span>
+        content.<span class="fn">onAppear</span> <span class="op">{</span>
+            container.<span class="var">analytics</span>.<span class="fn">setScreen</span>(name: screenName, <span class="kw">class</span>: screenClass)
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">extension</span> <span class="tp">View</span> <span class="op">{</span>
+    <span class="kw">func</span> <span class="fn">trackScreen</span>(<span class="var">_</span> <span class="var">name</span>: <span class="tp">String</span>, <span class="var">class</span> <span class="var">c</span>: <span class="tp">String</span> = <span class="str">"View"</span>) -> <span class="kw">some</span> <span class="tp">View</span> <span class="op">{</span>
+        <span class="fn">modifier</span>(<span class="tp">ScreenTrackingModifier</span>(screenName: name, screenClass: c))
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+  </section>
+
+  <!-- ── 09 CRASHLYTICS ── -->
+  <section id="crashlytics">
+    <div class="sec-head">
+      <div class="sec-num">09</div>
+      <div class="sec-info">
+        <h2>Firebase <em>Crashlytics</em></h2>
+        <div class="sec-sub">CrashlyticsService · dSYM · Non-fatal · Keys</div>
+      </div>
+    </div>
+
+    <p>Crashlytics capture automatiquement tous les crashes. Mais sa vraie puissance vient des logs, clés et erreurs non-fatales que vous ajoutez manuellement — ils permettent de reconstituer le contexte exact d'un crash.</p>
+
+    <h3>Upload des dSYM — configuration Xcode obligatoire</h3>
+    <div class="steps">
+      <div class="step">
+        <div class="step-col"><div class="step-num">1</div><div class="step-vline"></div></div>
+        <div class="step-body">
+          <h4>Build Phase — Upload dSYM</h4>
+          <p>Target → Build Phases → + New Run Script Phase. Mettez ce script APRÈS "Link Binary with Libraries". Sans ça, les crash reports affichent des adresses mémoire illisibles au lieu des noms de fonctions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Build Phase script — upload dSYM vers Crashlytics</span></div>
+      <div class="code-body"><pre><span class="cmt">#!/bin/bash
+# Build Phase → Run Script → après "Link Binary"</span>
+
+<span class="cmt"># Chemin vers le script Firebase selon SPM</span>
+<span class="str">"${BUILD_DIR%Build/*}SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"</span>
+
+<span class="cmt"># Input Files (obligatoire pour que Xcode exécute le script) :</span>
+<span class="cmt"># ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}</span>
+<span class="cmt"># ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}</span>
+<span class="cmt"># $(SRCROOT)/$(BUILT_PRODUCTS_DIR)/$(INFOPLIST_PATH)</span></pre></div>
+    </div>
+
+    <div class="callout c-warn">
+      <span>⚠️</span>
+      <p><strong>Debug Symbol Type :</strong> Build Settings → Debug Information Format → assurez-vous que c'est <strong>DWARF with dSYM File</strong> en Release (et idéalement en Debug aussi). Avec <code>DWARF only</code>, Crashlytics ne peut pas symboliquer les crashes.</p>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Infrastructure/CrashlyticsService.swift</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">FirebaseCrashlytics</span>
+
+<span class="cmt">// MARK: — LAYER: Infrastructure</span>
+<span class="kw">protocol</span> <span class="proto">CrashlyticsServiceProtocol</span>: <span class="proto">Sendable</span> <span class="op">{</span>
+    <span class="kw">func</span> <span class="fn">setUserID</span>(<span class="var">_</span> <span class="var">id</span>: <span class="tp">String</span>)
+    <span class="kw">func</span> <span class="fn">setKey</span>(<span class="var">_</span> <span class="var">key</span>: <span class="tp">CrashlyticsKey</span>, <span class="var">value</span>: <span class="kw">some</span> <span class="tp">CustomStringConvertible</span>)
+    <span class="kw">func</span> <span class="fn">log</span>(<span class="var">_</span> <span class="var">message</span>: <span class="tp">String</span>)
+    <span class="kw">func</span> <span class="fn">record</span>(<span class="var">error</span>: <span class="kw">some</span> <span class="tp">Error</span>)
+    <span class="kw">func</span> <span class="fn">crash</span>()  <span class="cmt">// test crash uniquement</span>
+<span class="op">}</span>
+
+<span class="cmt">// Clés Crashlytics — jamais de string en dur dans le code</span>
+<span class="kw">enum</span> <span class="tp">CrashlyticsKey</span>: <span class="proto">String</span> <span class="op">{</span>
+    <span class="kw">case</span> subscriptionTier   = <span class="str">"subscription_tier"</span>
+    <span class="kw">case</span> appVersion         = <span class="str">"app_version"</span>
+    <span class="kw">case</span> currentScreen      = <span class="str">"current_screen"</span>
+    <span class="kw">case</span> lastAction         = <span class="str">"last_action"</span>
+    <span class="kw">case</span> taskCount          = <span class="str">"task_count"</span>
+    <span class="kw">case</span> networkReachable   = <span class="str">"network_reachable"</span>
+<span class="op">}</span>
+
+<span class="kw">final class</span> <span class="tp">FirebaseCrashlyticsService</span>: <span class="proto">CrashlyticsServiceProtocol</span>, <span class="proto">Sendable</span> <span class="op">{</span>
+
+    <span class="kw">func</span> <span class="fn">setUserID</span>(<span class="var">_</span> <span class="var">id</span>: <span class="tp">String</span>) <span class="op">{</span>
+        <span class="tp">Crashlytics</span>.<span class="fn">crashlytics</span>().<span class="fn">setUserID</span>(id)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">setKey</span>(<span class="var">_</span> <span class="var">key</span>: <span class="tp">CrashlyticsKey</span>, <span class="var">value</span>: <span class="kw">some</span> <span class="tp">CustomStringConvertible</span>) <span class="op">{</span>
+        <span class="tp">Crashlytics</span>.<span class="fn">crashlytics</span>().<span class="fn">setCustomValue</span>(value.<span class="var">description</span>, forKey: key.<span class="var">rawValue</span>)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">log</span>(<span class="var">_</span> <span class="var">message</span>: <span class="tp">String</span>) <span class="op">{</span>
+        <span class="tp">Crashlytics</span>.<span class="fn">crashlytics</span>().<span class="fn">log</span>(message)
+    <span class="op">}</span>
+
+    <span class="cmt">// Erreur non-fatale — apparaît dans Crashlytics sans crash</span>
+    <span class="kw">func</span> <span class="fn">record</span>(<span class="var">error</span>: <span class="kw">some</span> <span class="tp">Error</span>) <span class="op">{</span>
+        <span class="tp">Crashlytics</span>.<span class="fn">crashlytics</span>().<span class="fn">record</span>(error: error)
+    <span class="op">}</span>
+
+    <span class="cmt">// ⚠ Uniquement pour tester l'intégration en debug</span>
+    <span class="kw">func</span> <span class="fn">crash</span>() <span class="op">{</span>
+        <span class="mac">#if DEBUG</span>
+        <span class="fn">fatalError</span>(<span class="str">"Test Crashlytics crash"</span>)
+        <span class="mac">#endif</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// Utilisation dans AppContainer après auth</span>
+<span class="kw">extension</span> <span class="tp">AppContainer</span> <span class="op">{</span>
+    <span class="kw">func</span> <span class="fn">configureCrashlytics</span>(<span class="var">for</span> <span class="var">user</span>: <span class="tp">AppUser</span>) <span class="op">{</span>
+        crashlytics.<span class="fn">setUserID</span>(user.<span class="var">uid</span>)
+        crashlytics.<span class="fn">setKey</span>(.<span class="var">appVersion</span>, value: <span class="tp">Bundle</span>.<span class="var">main</span>.<span class="fn">infoDictionary</span><span class="op">?</span>[<span class="str">"CFBundleShortVersionString"</span>] <span class="kw">as</span><span class="op">?</span> <span class="tp">String</span> <span class="op">??</span> <span class="str">"unknown"</span>)
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+  </section>
+
+  <!-- ── 10 ARCHITECTURE ── -->
+  <section id="architecture">
+    <div class="sec-head">
+      <div class="sec-num">10</div>
+      <div class="sec-info">
+        <h2><em>Architecture</em> Firebase</h2>
+        <div class="sec-sub">AppContainer mis à jour · Protocols · Dependency flow</div>
+      </div>
+    </div>
+
+    <p>Voici comment les services Firebase s'intègrent dans l'<code>AppContainer</code> vu dans le guide Architecture — chaque service est injecté via son protocole, jamais son type concret Firebase.</p>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Core/DI/AppContainer.swift — version Firebase complète</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">SwiftUI</span>
+
+<span class="mac">@MainActor</span>
+<span class="kw">final class</span> <span class="tp">AppContainer</span>: <span class="proto">ObservableObject</span> <span class="op">{</span>
+    <span class="kw">static let</span> <span class="var">shared</span> = <span class="tp">AppContainer</span>()
+
+    <span class="cmt">// ── Infrastructure (pas de type Firebase exposé) ────</span>
+    <span class="kw">private(set) lazy var</span> <span class="var">analytics</span>:    <span class="proto">AnalyticsServiceProtocol</span>    = <span class="tp">FirebaseAnalyticsService</span>()
+    <span class="kw">private(set) lazy var</span> <span class="var">crashlytics</span>: <span class="proto">CrashlyticsServiceProtocol</span> = <span class="tp">FirebaseCrashlyticsService</span>()
+    <span class="kw">private(set) lazy var</span> <span class="var">keychain</span>     = <span class="tp">KeychainService</span>()
+    <span class="kw">private(set) lazy var</span> <span class="var">themeManager</span> = <span class="tp">ThemeManager</span>(keychain: keychain)
+
+    <span class="cmt">// ── Auth ────────────────────────────────────────────</span>
+    <span class="kw">private(set) lazy var</span> <span class="var">authService</span> = <span class="tp">AuthService</span>(keychain: keychain)
+
+    <span class="cmt">// ── Repositories ────────────────────────────────────</span>
+    <span class="kw">private(set) lazy var</span> <span class="var">taskRepository</span>: <span class="proto">TaskRepositoryProtocol</span> =
+        <span class="tp">TaskFirestoreRepository</span>()
+
+    <span class="kw">private(set) lazy var</span> <span class="var">userRepository</span>: <span class="proto">UserRepositoryProtocol</span> =
+        <span class="tp">UserFirestoreRepository</span>(keychain: keychain)
+
+    <span class="kw">private(set) lazy var</span> <span class="var">subscriptionRepository</span>: <span class="proto">SubscriptionRepositoryProtocol</span> =
+        <span class="tp">StoreKitService</span>()
+
+    <span class="cmt">// ── UseCases ────────────────────────────────────────</span>
+    <span class="kw">private(set) lazy var</span> <span class="var">signInUseCase</span>: <span class="proto">SignInUseCaseProtocol</span> =
+        <span class="tp">SignInUseCase</span>(authService: authService, userRepo: userRepository,
+                      analytics: analytics, crashlytics: crashlytics)
+
+    <span class="kw">private(set) lazy var</span> <span class="var">createTaskUseCase</span>: <span class="proto">CreateTaskUseCaseProtocol</span> =
+        <span class="tp">CreateTaskUseCase</span>(taskRepo: taskRepository, subscriptionRepo: subscriptionRepository,
+                           analytics: analytics)
+
+    <span class="cmt">// ── ViewModel factories ─────────────────────────────</span>
+    <span class="kw">func</span> <span class="fn">makeSignInViewModel</span>() -> <span class="tp">SignInViewModel</span> <span class="op">{</span>
+        <span class="tp">SignInViewModel</span>(authService: authService)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">makeTaskListViewModel</span>() -> <span class="tp">TaskListViewModel</span> <span class="op">{</span>
+        <span class="tp">TaskListViewModel</span>(
+            fetchUseCase: <span class="tp">FetchTasksUseCase</span>(taskRepo: taskRepository),
+            createUseCase: createTaskUseCase,
+            analytics: analytics
+        )
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <h3>Diagram des dépendances Firebase</h3>
+    <div class="flow">
+      <div class="flow-node"><div class="flow-box f"><div class="flow-icon">🖥️</div><div class="flow-lbl">View</div><div class="flow-sub">SwiftUI</div></div></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-node"><div class="flow-box f"><div class="flow-icon">🧠</div><div class="flow-lbl">ViewModel</div><div class="flow-sub">@MainActor</div></div></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-node"><div class="flow-box f"><div class="flow-icon">⚙️</div><div class="flow-lbl">UseCase</div><div class="flow-sub">Domain</div></div></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-node"><div class="flow-box g"><div class="flow-icon">🔒</div><div class="flow-lbl">Protocol</div><div class="flow-sub">Interface</div></div></div>
+      <div class="flow-arr">→</div>
+      <div class="flow-node"><div class="flow-box b"><div class="flow-icon">🔥</div><div class="flow-lbl">Firebase</div><div class="flow-sub">Data Layer</div></div></div>
+    </div>
+
+    <div class="callout c-green">
+      <span>✅</span>
+      <p><strong>Règle absolue :</strong> aucun type Firebase (<code>DocumentSnapshot</code>, <code>QuerySnapshot</code>, <code>FirebaseAuth.User</code>, <code>Firestore</code>…) ne sort de la couche Data. Les protocols (<code>TaskRepositoryProtocol</code>, <code>AuthServiceProtocol</code>) sont définis dans Domain ou Core — sans import Firebase. Cela permet de remplacer Firebase par n'importe quel autre backend sans toucher au Domain ni à la Presentation.</p>
+    </div>
+  </section>
+
+  <!-- ── 11 OFFLINE ── -->
+  <section id="offline">
+    <div class="sec-head">
+      <div class="sec-num">11</div>
+      <div class="sec-info">
+        <h2>Mode <em>Offline</em></h2>
+        <div class="sec-sub">Cache Firestore · Persistance · Sync automatique</div>
+      </div>
+    </div>
+
+    <p>Firestore supporte le mode offline natif — les lectures et écritures fonctionnent sans connexion, et la synchronisation se fait automatiquement à la reconnexion. Il faut l'activer explicitement.</p>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Data/Firestore/FirestoreConfiguration.swift</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">FirebaseFirestore</span>
+
+<span class="kw">enum</span> <span class="tp">FirestoreConfiguration</span> <span class="op">{</span>
+
+    <span class="kw">static func</span> <span class="fn">configure</span>() <span class="op">{</span>
+        <span class="kw">let</span> <span class="var">settings</span> = <span class="tp">FirestoreSettings</span>()
+
+        <span class="cmt">// Cache local persistant (remplace l'ancien enablePersistence)</span>
+        settings.<span class="var">cacheSettings</span> = <span class="tp">PersistentCacheSettings</span>(sizeBytes: <span class="tp">FirestoreCacheSizeUnlimited</span>)
+
+        <span class="cmt">// En debug : utiliser l'émulateur local</span>
+        <span class="mac">#if DEBUG</span>
+        <span class="kw">if</span> <span class="tp">AppConfiguration</span>.<span class="var">useEmulator</span> <span class="op">{</span>
+            <span class="kw">let</span> <span class="var">db</span> = <span class="tp">Firestore</span>.<span class="fn">firestore</span>()
+            db.<span class="fn">useEmulator</span>(withHost: <span class="str">"localhost"</span>, port: <span class="num">8080</span>)
+            <span class="kw">return</span>  <span class="cmt">// pas de cache sur l'émulateur</span>
+        <span class="op">}</span>
+        <span class="mac">#endif</span>
+
+        <span class="tp">Firestore</span>.<span class="fn">firestore</span>().<span class="var">settings</span> = settings
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// À appeler dans AppDelegate, APRÈS FirebaseApp.configure()</span>
+<span class="cmt">// FirestoreConfiguration.configure()</span></pre></div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Scénario</th><th>Comportement Firestore</th><th>Action requise</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>App ouverte, online</strong></td>
+            <td>Lecture/écriture temps réel, sync instantané</td>
+            <td>Rien</td>
+          </tr>
+          <tr>
+            <td><strong>App ouverte, offline</strong></td>
+            <td>Lecture depuis le cache local, écriture en attente</td>
+            <td>Indiquer dans l'UI si pertinent</td>
+          </tr>
+          <tr>
+            <td><strong>Reconnexion</strong></td>
+            <td>Les écritures en attente sont envoyées automatiquement</td>
+            <td>Rien — automatique</td>
+          </tr>
+          <tr>
+            <td><strong>Conflit</strong></td>
+            <td>Le serveur gagne — last-write-wins</td>
+            <td>Concevoir les données pour éviter les conflits</td>
+          </tr>
+          <tr>
+            <td><strong>Premier lancement offline</strong></td>
+            <td>Cache vide — aucune donnée disponible</td>
+            <td>Gérer l'état vide dans l'UI</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout c-fire">
+      <span>🔥</span>
+      <p><strong>Listeners et offline :</strong> les <code>addSnapshotListener</code> continuent de fonctionner offline — ils retournent les données du cache local. Quand la connexion revient, Firebase envoie automatiquement un nouveau snapshot avec les données serveur. Votre UI se met à jour sans code supplémentaire.</p>
+    </div>
+  </section>
+
+  <!-- ── 12 TESTS ── -->
+  <section id="tests">
+    <div class="sec-head">
+      <div class="sec-num">12</div>
+      <div class="sec-info">
+        <h2>Tests & <em>Emulators</em></h2>
+        <div class="sec-sub">Mocks · FirebaseEmulatorSuite · AuthService tests</div>
+      </div>
+    </div>
+
+    <p>Ne testez jamais contre Firebase production. Utilisez l'<strong>émulateur Firebase local</strong> pour les tests d'intégration et des <strong>mocks en mémoire</strong> pour les tests unitaires.</p>
+
+    <h3>Démarrer les émulateurs</h3>
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Terminal — démarrer le Firebase Emulator Suite</span></div>
+      <div class="code-body"><pre><span class="cmt"># Installer Firebase CLI si pas déjà fait</span>
+npm install -g firebase-tools
+
+<span class="cmt"># Initialiser dans votre projet (une seule fois)</span>
+firebase init emulators
+<span class="cmt"># Sélectionner : Authentication, Firestore</span>
+
+<span class="cmt"># Démarrer les émulateurs</span>
+firebase emulators:start
+
+<span class="cmt"># UI disponible sur http://localhost:4000</span>
+<span class="cmt"># Auth émulateur : localhost:9099</span>
+<span class="cmt"># Firestore émulateur : localhost:8080</span>
+
+<span class="cmt"># Avec données de seed au démarrage</span>
+firebase emulators:start --import=./emulator-data --export-on-exit</pre></div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-hdr"><div class="code-dots"><span></span><span></span><span></span></div><span class="code-fname">Tests/Mocks/MockAuthService.swift</span></div>
+      <div class="code-body"><pre><span class="kw">import</span> <span class="tp">XCTest</span>
+<span class="mac">@testable import</span> MyApp
+
+<span class="kw">final class</span> <span class="tp">MockAuthService</span>: <span class="proto">AuthServiceProtocol</span> <span class="op">{</span>
+    <span class="kw">var</span> <span class="var">currentUser</span>: <span class="tp">AppUser</span><span class="op">?</span>
+    <span class="kw">var</span> <span class="var">signInResult</span>: <span class="tp">Result</span>&lt;<span class="tp">AppUser</span>, <span class="tp">Error</span>&gt; = .<span class="fn">failure</span>(<span class="tp">AuthError</span>.notAuthenticated)
+    <span class="kw">var</span> <span class="var">signOutCalled</span> = <span class="kw">false</span>
+
+    <span class="kw">func</span> <span class="fn">signInWithApple</span>(<span class="var">authorization</span>: <span class="kw">any</span> <span class="tp">Sendable</span>) <span class="kw">async throws</span> -> <span class="tp">AppUser</span> <span class="op">{</span>
+        <span class="kw">switch</span> signInResult <span class="op">{</span>
+        <span class="kw">case</span> .<span class="fn">success</span>(<span class="kw">let</span> <span class="var">u</span>): currentUser = u; <span class="kw">return</span> u
+        <span class="kw">case</span> .<span class="fn">failure</span>(<span class="kw">let</span> <span class="var">e</span>): <span class="kw">throw</span> e
+        <span class="op">}</span>
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">signOut</span>() <span class="kw">throws</span> <span class="op">{</span>
+        signOutCalled = <span class="kw">true</span>
+        currentUser = <span class="kw">nil</span>
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="kw">final class</span> <span class="tp">MockTaskRepository</span>: <span class="proto">TaskRepositoryProtocol</span> <span class="op">{</span>
+    <span class="kw">var</span> <span class="var">tasks</span>: [<span class="tp">Task</span>] = []
+    <span class="kw">var</span> <span class="var">shouldThrow</span>: <span class="tp">Error</span><span class="op">?</span>
+    <span class="kw">private(set) var</span> <span class="var">createdTasks</span>: [<span class="tp">Task</span>] = []
+    <span class="kw">private(set) var</span> <span class="var">deletedIDs</span>: [<span class="tp">UUID</span>] = []
+
+    <span class="kw">func</span> <span class="fn">fetchAll</span>() <span class="kw">async throws</span> -> [<span class="tp">Task</span>] <span class="op">{</span>
+        <span class="kw">if let</span> <span class="var">e</span> = shouldThrow <span class="op">{</span> <span class="kw">throw</span> e <span class="op">}</span>; <span class="kw">return</span> tasks
+    <span class="op">}</span>
+    <span class="kw">func</span> <span class="fn">count</span>() <span class="kw">async throws</span> -> <span class="tp">Int</span>  <span class="op">{</span>
+        <span class="kw">if let</span> <span class="var">e</span> = shouldThrow <span class="op">{</span> <span class="kw">throw</span> e <span class="op">}</span>; <span class="kw">return</span> tasks.<span class="var">count</span>
+    <span class="op">}</span>
+    <span class="kw">func</span> <span class="fn">create</span>(<span class="var">_</span> <span class="var">t</span>: <span class="tp">Task</span>) <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">if let</span> <span class="var">e</span> = shouldThrow <span class="op">{</span> <span class="kw">throw</span> e <span class="op">}</span>; createdTasks.<span class="fn">append</span>(t)
+    <span class="op">}</span>
+    <span class="kw">func</span> <span class="fn">delete</span>(<span class="var">id</span>: <span class="tp">UUID</span>) <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">if let</span> <span class="var">e</span> = shouldThrow <span class="op">{</span> <span class="kw">throw</span> e <span class="op">}</span>; deletedIDs.<span class="fn">append</span>(id)
+    <span class="op">}</span>
+<span class="op">}</span>
+
+<span class="cmt">// Test SignInUseCase avec mocks</span>
+<span class="mac">@MainActor</span>
+<span class="kw">final class</span> <span class="tp">SignInUseCaseTests</span>: <span class="tp">XCTestCase</span> <span class="op">{</span>
+
+    <span class="kw">var</span> <span class="var">sut</span>:         <span class="tp">SignInUseCase</span><span class="op">!</span>
+    <span class="kw">var</span> <span class="var">mockAuth</span>:    <span class="tp">MockAuthService</span><span class="op">!</span>
+    <span class="kw">var</span> <span class="var">mockAnalytics</span>:<span class="tp">MockAnalyticsService</span><span class="op">!</span>
+
+    <span class="kw">override func</span> <span class="fn">setUp</span>() <span class="op">{</span>
+        mockAuth     = <span class="tp">MockAuthService</span>()
+        mockAnalytics = <span class="tp">MockAnalyticsService</span>()
+        sut = <span class="tp">SignInUseCase</span>(authService: mockAuth, userRepo: <span class="tp">MockUserRepository</span>(),
+                             analytics: mockAnalytics, crashlytics: <span class="tp">MockCrashlyticsService</span>())
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">test_signIn_success_logsAnalyticsEvent</span>() <span class="kw">async throws</span> <span class="op">{</span>
+        <span class="kw">let</span> <span class="var">user</span> = <span class="tp">AppUser</span>(uid: <span class="str">"uid1"</span>, email: <span class="str">"test@test.com"</span>,
+                             displayName: <span class="kw">nil</span>, photoURL: <span class="kw">nil</span>,
+                             isAnonymous: <span class="kw">false</span>, isEmailVerified: <span class="kw">true</span>, createdAt: <span class="kw">nil</span>)
+        mockAuth.<span class="var">signInResult</span> = .<span class="fn">success</span>(user)
+
+        <span class="kw">let</span> <span class="var">result</span> = <span class="kw">try await</span> sut.<span class="fn">execute</span>(authorization: <span class="tp">MockAuthorization</span>())
+
+        <span class="fn">XCTAssertEqual</span>(result.<span class="var">uid</span>, <span class="str">"uid1"</span>)
+        <span class="fn">XCTAssertEqual</span>(mockAnalytics.<span class="var">lastEvent</span><span class="op">?</span>.<span class="var">name</span>, <span class="str">"sign_in_success"</span>)
+    <span class="op">}</span>
+
+    <span class="kw">func</span> <span class="fn">test_signIn_failure_recordsNonFatalError</span>() <span class="kw">async</span> <span class="op">{</span>
+        mockAuth.<span class="var">signInResult</span> = .<span class="fn">failure</span>(<span class="tp">AuthError</span>.invalidCredential)
+
+        <span class="kw">do</span> <span class="op">{</span> <span class="kw">let</span> <span class="var">_</span> = <span class="kw">try await</span> sut.<span class="fn">execute</span>(authorization: <span class="tp">MockAuthorization</span>()) <span class="op">}</span>
+        <span class="kw">catch</span> <span class="op">{</span>
+            <span class="cmt">// Crashlytics a dû enregistrer l'erreur</span>
+            <span class="fn">XCTAssertTrue</span>(mockAnalytics.<span class="var">signInFailedLogged</span>)
+        <span class="op">}</span>
+    <span class="op">}</span>
+<span class="op">}</span></pre></div>
+    </div>
+
+    <h3>Récapitulatif — ce qui vit où</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Fichier</th><th>Couche</th><th>Import Firebase ?</th><th>Responsabilité</th></tr></thead>
+        <tbody>
+          <tr><td><code>AuthConstants.swift</code></td><td><span class="badge b-green">Core</span></td><td>❌ Non</td><td>Clés Keychain, provider IDs</td></tr>
+          <tr><td><code>AnalyticsEvents.swift</code></td><td><span class="badge b-green">Core</span></td><td>❌ Non</td><td>Enum events typés + paramètres</td></tr>
+          <tr><td><code>FirestoreConstants.swift</code></td><td><span class="badge b-green">Core</span></td><td>❌ Non</td><td>Noms collections et champs</td></tr>
+          <tr><td><code>CrashlyticsKey.swift</code></td><td><span class="badge b-green">Core</span></td><td>❌ Non</td><td>Enum clés Crashlytics typées</td></tr>
+          <tr><td><code>AppUser.swift</code></td><td><span class="badge b-fire">Domain</span></td><td>❌ Non</td><td>Entité utilisateur pure Swift</td></tr>
+          <tr><td><code>SignInUseCase.swift</code></td><td><span class="badge b-fire">Domain</span></td><td>❌ Non</td><td>Orchestration login + analytics</td></tr>
+          <tr><td><code>AuthService.swift</code></td><td><span class="badge b-blue">Data</span></td><td>✅ FirebaseAuth</td><td>Nonce, credential, signIn Apple</td></tr>
+          <tr><td><code>TaskFirestoreRepository.swift</code></td><td><span class="badge b-blue">Data</span></td><td>✅ FirebaseFirestore</td><td>CRUD + listener temps réel</td></tr>
+          <tr><td><code>AnalyticsService.swift</code></td><td><span class="badge b-purple">Infra</span></td><td>✅ FirebaseAnalytics</td><td>Wrapper analytics + mock</td></tr>
+          <tr><td><code>CrashlyticsService.swift</code></td><td><span class="badge b-purple">Infra</span></td><td>✅ FirebaseCrashlytics</td><td>Logs, keys, non-fatal errors</td></tr>
+          <tr><td><code>AppDelegate.swift</code></td><td><span class="badge b-warn">App</span></td><td>✅ Firebase</td><td>FirebaseApp.configure() uniquement</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <strong>Firebase iOS — Guide Complet</strong><br>
+  Auth Apple · Firestore · Analytics · Crashlytics · Security Rules · Offline · Emulators<br>
+  <span style="opacity:0.35;font-size:9px;letter-spacing:0.1em;">Swift 5.9+ · iOS 17+ · Firebase SDK 11.x · SPM · Clean Architecture · 2024–2025</span>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "inLanguage": "fr-FR",
+  "headline": "Firebase iOS — Guide Complet",
+  "about": [
+    "Firebase iOS",
+    "Swift 5.9",
+    "SwiftUI",
+    "Clean Architecture",
+    "Auth Apple",
+    "Firestore",
+    "Analytics",
+    "Crashlytics",
+    "Security Rules",
+    "Offline",
+    "Emulators"
+  ],
+  "description": "Guide complet pour intégrer Firebase sur iOS avec Swift 5.9+ et SwiftUI : configuration, Auth Apple, Firestore, Analytics, Crashlytics, règles de sécurité, mode hors-ligne, émulateurs et architecture propre.",
+  "author": {
+    "@type": "Person",
+    "name": "Olivier (codewitholivier)"
+  }
+}
+</script>
+
+</body>
+</html>
